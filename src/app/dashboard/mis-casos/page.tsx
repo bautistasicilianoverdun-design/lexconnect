@@ -91,8 +91,8 @@ export default async function MisCasosPage() {
         </div>
       ) : (
         cases.map((c) => {
-          const cat = c.legal_categories as { name: string } | null
-          const prov = c.provinces as { name: string } | null
+          const cat = (Array.isArray(c.legal_categories) ? c.legal_categories[0] : c.legal_categories) as { name: string } | null
+          const prov = (Array.isArray(c.provinces) ? c.provinces[0] : c.provinces) as { name: string } | null
           const proposals = (c.case_proposals as any[]) ?? []
           const status = STATUS_STYLES[c.status] ?? STATUS_STYLES.open
 

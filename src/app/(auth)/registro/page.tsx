@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Scale, Eye, EyeOff, ArrowRight, Shield, Users, Briefcase, Building2, Check } from 'lucide-react'
@@ -28,7 +28,7 @@ const ROLES = [
   },
 ]
 
-export default function RegisterPage() {
+function RegisterForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const initialRole = (searchParams.get('rol') === 'abogado' ? 'lawyer' : searchParams.get('rol') === 'estudio' ? 'firm' : 'client') as Role
@@ -289,5 +289,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   )
 }

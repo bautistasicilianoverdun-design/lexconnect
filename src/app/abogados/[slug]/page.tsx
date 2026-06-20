@@ -1,6 +1,6 @@
 import {
   MapPin, Star, CheckCircle2, Clock, MessageSquare, Video,
-  Briefcase, GraduationCap, Globe, Linkedin, Calendar,
+  Briefcase, GraduationCap, Globe, Calendar,
   Shield, ArrowRight, Heart, Share2, Flag, BookOpen
 } from 'lucide-react'
 import Link from 'next/link'

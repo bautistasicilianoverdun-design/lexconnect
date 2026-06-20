@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -54,7 +54,7 @@ type SortKey = 'rating' | 'response_time' | 'cases' | 'reviews'
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-export default function LawyersPage() {
+function LawyersContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -341,6 +341,14 @@ export default function LawyersPage() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function LawyersPage() {
+  return (
+    <Suspense>
+      <LawyersContent />
+    </Suspense>
   )
 }
 

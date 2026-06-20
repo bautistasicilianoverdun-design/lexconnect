@@ -128,7 +128,7 @@ export default async function DashboardHome() {
             <div className="divide-y divide-slate-100">
               {recentCases.map((c) => {
                 const status = STATUS_STYLES[c.status] ?? STATUS_STYLES.open
-                const cat = c.legal_categories as { name: string } | null
+                const cat = (Array.isArray(c.legal_categories) ? c.legal_categories[0] : c.legal_categories) as { name: string } | null
                 return (
                   <div key={c.id} className="flex items-start gap-3 p-5">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 shrink-0">
