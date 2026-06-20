@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { SearchHero } from "@/components/landing/search-hero";
 import {
   Scale,
-  Search,
   Shield,
   Star,
   CheckCircle2,
@@ -179,39 +179,7 @@ export default function HomePage() {
               Argentina. Seguro, transparente y sin vueltas.
             </p>
 
-            {/* Search bar */}
-            <div className="mt-10 max-w-2xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3 p-2 rounded-2xl bg-white/10 backdrop-blur border border-white/20">
-                <div className="flex-1 flex items-center gap-3 px-4 py-2">
-                  <Search className="h-5 w-5 text-slate-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="¿Qué tipo de problema legal tenés?"
-                    className="flex-1 bg-transparent text-white placeholder:text-slate-400 outline-none text-sm"
-                  />
-                </div>
-                <Link
-                  href="/abogados"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors text-sm"
-                >
-                  Buscar abogado
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Quick links */}
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {["Divorcio", "Laboral", "Accidente de tránsito", "Contrato", "Herencia"].map((term) => (
-                <Link
-                  key={term}
-                  href={`/abogados?q=${encodeURIComponent(term)}`}
-                  className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1 text-xs text-slate-300 transition-colors"
-                >
-                  {term}
-                </Link>
-              ))}
-            </div>
+            <SearchHero />
 
             {/* Stats */}
             <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-3xl mx-auto">
