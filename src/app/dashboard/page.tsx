@@ -1,80 +1,75 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import {
   FileText, MessageSquare, Star, Clock, ChevronRight,
-  TrendingUp, CheckCircle2, AlertCircle, Plus, Eye,
+  TrendingUp, Plus, Eye, AlertCircle,
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
-const RECENT_CASES = [
-  {
-    id: '1',
-    title: 'Despido sin causa después de 8 años de antigüedad',
-    category: 'Laboral',
-    status: 'active',
-    proposals: 4,
-    created: 'Hace 2 días',
-  },
-  {
-    id: '2',
-    title: 'Cuota alimentaria desactualizada',
-    category: 'Familia',
-    status: 'in_progress',
-    proposals: 6,
-    created: 'Hace 5 días',
-  },
-]
-
-const RECENT_PROPOSALS = [
-  {
-    id: 'p1',
-    caseTitle: 'Despido sin causa después de 8 años de antigüedad',
-    lawyerName: 'Dr. Carlos Pérez',
-    lawyerAvatar: 'CP',
-    lawyerRating: 4.9,
-    preview: 'Leí tu caso con atención. Con 8 años de antigüedad tenés derecho a...',
-    time: 'Hace 3 horas',
-    isNew: true,
-  },
-  {
-    id: 'p2',
-    caseTitle: 'Despido sin causa después de 8 años de antigüedad',
-    lawyerName: 'Dra. Ana Martínez',
-    lawyerAvatar: 'AM',
-    lawyerRating: 4.8,
-    preview: 'Hola, soy especialista en derecho laboral con 12 años de experiencia...',
-    time: 'Hace 6 horas',
-    isNew: false,
-  },
-]
-
-const RECENT_MESSAGES = [
-  {
-    id: 'm1',
-    with: 'Dr. Carlos Pérez',
-    avatar: 'CP',
-    preview: '¿Podemos coordinar una videollamada para esta semana?',
-    time: 'Hace 1 hora',
-    unread: 2,
-  },
-  {
-    id: 'm2',
-    with: 'Dra. Ana Martínez',
-    avatar: 'AM',
-    preview: 'Perfecto, envíame los documentos cuando puedas.',
-    time: 'Ayer',
-    unread: 0,
-  },
-]
-
-const STATUS_STYLES: Record<string, { label: string; className: string }> = {
-  active: { label: 'Activo', className: 'bg-green-100 text-green-700' },
-  in_progress: { label: 'En proceso', className: 'bg-blue-100 text-blue-700' },
-  closed: { label: 'Cerrado', className: 'bg-slate-100 text-slate-600' },
+function timeAgo(date: string) {
+  const diff = Date.now() - new Date(date).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 2) return 'Ahora'
+  if (mins < 60) return `Hace ${mins} min`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `Hace ${hours}h`
+  const days = Math.floor(hours / 24)
+  return `Hace ${days} ${days === 1 ? 'día' : 'días'}`
 }
 
-export default function DashboardHome() {
+const STATUS_STYLES: Record<string, { label: string; className: string }> = {
+  open: { label: 'Activo', className: 'bg-green-100 text-green-700' },
+  in_progress: { label: 'En proceso', className: 'bg-blue-100 text-blue-700' },
+  closed: { label: 'Cerrado', className: 'bg-slate-100 text-slate-600' },
+  archived: { label: 'Archivado', className: 'bg-slate-100 text-slate-500' },
+}
+
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+}
+
+export default async function DashboardHome() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/iniciar-sesion')
+
+  const [
+    { count: casesCount },
+    { count: proposalsCount },
+    { count: favoritesCount },
+    { data: conversations },
+    { data: recentCases },
+  ] = await Promise.all([
+    supabase
+      .from('legal_cases')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', user.id)
+      .eq('status', 'open'),
+    supabase
+      .from('case_proposals')
+      .select('legal_cases!inner(client_id)', { count: 'exact', head: true })
+      .eq('legal_cases.client_id', user.id),
+    supabase
+      .from('client_favorites')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', user.id),
+    supabase
+      .from('conversations')
+      .select('client_unread')
+      .eq('client_id', user.id),
+    supabase
+      .from('legal_cases')
+      .select('id, title, status, proposals_count, created_at, legal_categories(name)')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(3),
+  ])
+
+  const unreadMessages = conversations?.reduce((sum, c) => sum + (c.client_unread ?? 0), 0) ?? 0
+  const newProposals = (proposalsCount ?? 0)
+
   return (
     <div className="space-y-6">
-      {/* Welcome */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Mi panel</h1>
         <p className="text-sm text-slate-500 mt-0.5">Seguí el estado de tus casos y propuestas</p>
@@ -83,10 +78,10 @@ export default function DashboardHome() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Casos activos', value: '2', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Propuestas recibidas', value: '10', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Mensajes no leídos', value: '3', icon: MessageSquare, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Abogados favoritos', value: '5', icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Casos activos', value: casesCount ?? 0, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Propuestas recibidas', value: newProposals, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Mensajes no leídos', value: unreadMessages, icon: MessageSquare, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Abogados favoritos', value: favoritesCount ?? 0, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-5">
             <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${bg} mb-3`}>
@@ -98,27 +93,28 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      {/* Alert: pending proposal */}
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
-        <AlertCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-blue-900">Tenés 4 propuestas nuevas en tu caso laboral</p>
-          <p className="text-xs text-blue-700 mt-0.5">Revisalas y elegí al abogado que mejor se adapte a tu situación.</p>
+      {/* Alert when proposals exist */}
+      {newProposals > 0 && (
+        <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+          <AlertCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-blue-900">
+              Tenés {newProposals} {newProposals === 1 ? 'propuesta' : 'propuestas'} de abogados
+            </p>
+            <p className="text-xs text-blue-700 mt-0.5">Revisalas y elegí al profesional que mejor se adapte a tu caso.</p>
+          </div>
+          <Link href="/dashboard/mis-casos" className="shrink-0 text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1">
+            Ver <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
-        <Link
-          href="/dashboard/mis-casos"
-          className="shrink-0 text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1"
-        >
-          Ver <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent cases */}
         <div className="bg-white rounded-2xl border border-slate-200">
           <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900">Mis casos</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Link href="/casos/nuevo" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
                 <Plus className="h-3.5 w-3.5" /> Nuevo
               </Link>
@@ -127,103 +123,98 @@ export default function DashboardHome() {
               </Link>
             </div>
           </div>
-          <div className="divide-y divide-slate-100">
-            {RECENT_CASES.map((c) => (
-              <Link
-                key={c.id}
-                href={`/dashboard/mis-casos/${c.id}`}
-                className="flex items-start gap-3 p-5 hover:bg-slate-50 transition-colors group"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 shrink-0">
-                  <FileText className="h-4 w-4 text-slate-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-1">{c.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[c.status].className}`}>
-                      {STATUS_STYLES[c.status].label}
-                    </span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Eye className="h-3 w-3" /> {c.proposals} propuestas
-                    </span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {c.created}
-                    </span>
+
+          {recentCases && recentCases.length > 0 ? (
+            <div className="divide-y divide-slate-100">
+              {recentCases.map((c) => {
+                const status = STATUS_STYLES[c.status] ?? STATUS_STYLES.open
+                const cat = c.legal_categories as { name: string } | null
+                return (
+                  <div key={c.id} className="flex items-start gap-3 p-5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 shrink-0">
+                      <FileText className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 line-clamp-1">{c.title}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
+                          {status.label}
+                        </span>
+                        {cat && <span className="text-xs text-slate-400">{cat.name}</span>}
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                          <Eye className="h-3 w-3" /> {c.proposals_count}
+                        </span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {timeAgo(c.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                    <Link href={`/casos/${c.id}`}>
+                      <ChevronRight className="h-4 w-4 text-slate-300 hover:text-slate-500 mt-1" />
+                    </Link>
                   </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 shrink-0 mt-1" />
-              </Link>
-            ))}
-          </div>
-          <div className="p-5 pt-0">
+                )
+              })}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-slate-400">
+              Todavía no publicaste ningún caso.
+            </div>
+          )}
+
+          <div className="p-5 pt-2">
             <Link
               href="/casos/nuevo"
-              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-blue-300 hover:text-blue-600 transition-colors mt-4"
+              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm font-medium text-slate-400 hover:border-blue-300 hover:text-blue-600 transition-colors"
             >
               <Plus className="h-4 w-4" /> Publicar nuevo caso
             </Link>
           </div>
         </div>
 
-        {/* Recent proposals */}
-        <div className="bg-white rounded-2xl border border-slate-200">
-          <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-900">Últimas propuestas</h2>
-            <Link href="/dashboard/mis-casos" className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
-              Ver todas <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {RECENT_PROPOSALS.map((p) => (
-              <Link key={p.id} href={`/dashboard/mis-casos/1`} className="flex items-start gap-3 p-5 hover:bg-slate-50 transition-colors group">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-sm shrink-0">
-                  {p.lawyerAvatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{p.lawyerName}</p>
-                    {p.isNew && (
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">Nuevo</span>
-                    )}
-                    <span className="ml-auto text-xs text-slate-400">{p.time}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{p.preview}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="bg-white rounded-2xl border border-slate-200">
-        <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Mensajes recientes</h2>
-          <Link href="/dashboard/mensajes" className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
-            Ver todos <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {RECENT_MESSAGES.map((m) => (
-            <Link key={m.id} href={`/dashboard/mensajes/${m.id}`} className="flex items-center gap-3 p-5 hover:bg-slate-50 transition-colors group">
-              <div className="relative shrink-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-white font-bold text-sm">
-                  {m.avatar}
-                </div>
-                {m.unread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white">
-                    {m.unread}
-                  </span>
-                )}
+        {/* Quick links */}
+        <div className="space-y-4">
+          {[
+            {
+              href: '/dashboard/mis-casos',
+              label: 'Ver mis propuestas',
+              desc: 'Revisá las propuestas de abogados para tus casos',
+              icon: TrendingUp,
+              color: 'bg-purple-50 text-purple-600',
+            },
+            {
+              href: '/dashboard/mensajes',
+              label: 'Mensajes',
+              desc: unreadMessages > 0 ? `Tenés ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
+              icon: MessageSquare,
+              color: 'bg-orange-50 text-orange-600',
+            },
+            {
+              href: '/dashboard/favoritos',
+              label: 'Abogados favoritos',
+              desc: `${favoritesCount ?? 0} abogados guardados`,
+              icon: Star,
+              color: 'bg-amber-50 text-amber-600',
+            },
+            {
+              href: '/abogados',
+              label: 'Buscar abogados',
+              desc: 'Encontrá el profesional ideal para tu caso',
+              icon: FileText,
+              color: 'bg-blue-50 text-blue-600',
+            },
+          ].map(({ href, label, desc, icon: Icon, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-4 bg-white rounded-2xl border border-slate-200 p-4 hover:shadow-sm transition-shadow group"
+            >
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color} shrink-0`}>
+                <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className={`text-sm ${m.unread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'} group-hover:text-blue-700 transition-colors`}>
-                    {m.with}
-                  </p>
-                  <span className="text-xs text-slate-400 shrink-0 ml-2">{m.time}</span>
-                </div>
-                <p className={`text-xs mt-0.5 line-clamp-1 ${m.unread ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>{m.preview}</p>
+                <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{label}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
               </div>
               <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 shrink-0" />
             </Link>
