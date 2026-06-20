@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Building,
   Calculator,
+  Search,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
