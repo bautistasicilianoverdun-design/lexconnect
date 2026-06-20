@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Scale, Eye, EyeOff, ArrowRight, Shield, Users, Briefcase, Building2, Check } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 
 type Role = 'client' | 'lawyer' | 'firm'
 
@@ -29,17 +30,45 @@ const ROLES = [
 
 export default function RegisterPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const initialRole = (searchParams.get('rol') === 'abogado' ? 'lawyer' : searchParams.get('rol') === 'estudio' ? 'firm' : 'client') as Role
 
   const [role, setRole] = useState<Role>(initialRole)
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1000))
+    setError('')
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value
+    const password = (form.elements.namedItem('password') as HTMLInputElement).value
+    const firstName = (form.elements.namedItem('first_name') as HTMLInputElement)?.value ?? ''
+    const lastName = (form.elements.namedItem('last_name') as HTMLInputElement)?.value ?? ''
+
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { first_name: firstName, last_name: lastName, role },
+      },
+    })
+
+    if (authError) {
+      setError(authError.message)
+      setLoading(false)
+      return
+    }
+    setSuccess(true)
     setLoading(false)
   }
 
@@ -123,6 +152,17 @@ export default function RegisterPage() {
                   </span>
                 </p>
               </div>
+
+              {success && (
+                <div className="mb-5 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+                  ¡Cuenta creada! Revisá tu email para confirmar tu dirección y luego iniciá sesión.
+                </div>
+              )}
+              {error && (
+                <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
