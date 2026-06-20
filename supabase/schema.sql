@@ -645,13 +645,32 @@ CREATE POLICY "favorites_all" ON client_favorites FOR ALL
 -- Auto-crear perfil al registrarse
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_full_name TEXT;
+  v_role user_role;
+  v_raw_role TEXT;
 BEGIN
-  INSERT INTO profiles (id, full_name, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Usuario'),
-    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'client')
+  -- Construir nombre completo desde first_name + last_name o full_name
+  v_full_name := COALESCE(
+    NULLIF(TRIM(
+      COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' ||
+      COALESCE(NEW.raw_user_meta_data->>'last_name', '')
+    ), ''),
+    NEW.raw_user_meta_data->>'full_name',
+    'Usuario'
   );
+
+  -- Mapear 'firm' → 'firm_admin' para compatibilidad con el frontend
+  v_raw_role := NEW.raw_user_meta_data->>'role';
+  v_role := CASE v_raw_role
+    WHEN 'firm' THEN 'firm_admin'::user_role
+    WHEN 'lawyer' THEN 'lawyer'::user_role
+    ELSE 'client'::user_role
+  END;
+
+  INSERT INTO profiles (id, full_name, role)
+  VALUES (NEW.id, v_full_name, v_role);
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
