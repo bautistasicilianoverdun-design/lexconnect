@@ -1,92 +1,256 @@
 'use client'
-import { useState } from 'react'
-import { Send, Search, Paperclip, Phone, Video, MoreVertical, CheckCheck, Check } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Send, Search, Phone, Video, MoreVertical, CheckCheck, Check, MessageSquare } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
-const CONVERSATIONS = [
-  {
-    id: 'm1',
-    with: 'Dr. Carlos Pérez',
-    avatar: 'CP',
-    avatarBg: 'bg-blue-600',
-    lastMessage: '¿Podemos coordinar una videollamada para esta semana?',
-    time: 'Hace 1h',
-    unread: 2,
-    online: true,
-    caseRef: 'Despido sin causa',
-  },
-  {
-    id: 'm2',
-    with: 'Dra. Ana Martínez',
-    avatar: 'AM',
-    avatarBg: 'bg-purple-600',
-    lastMessage: 'Perfecto, envíame los documentos cuando puedas.',
-    time: 'Ayer',
-    unread: 0,
-    online: false,
-    caseRef: 'Despido sin causa',
-  },
-  {
-    id: 'm3',
-    with: 'Dr. Roberto Sánchez',
-    avatar: 'RS',
-    avatarBg: 'bg-green-600',
-    lastMessage: 'Entendido. Voy a revisar el contrato que me mandaste.',
-    time: 'Hace 3 días',
-    unread: 0,
-    online: true,
-    caseRef: 'Cuota alimentaria',
-  },
-]
+type Profile = { id: string; full_name: string }
 
-const MESSAGES: Record<string, Array<{
-  id: string; from: 'me' | 'them'; text: string; time: string; read: boolean;
-}>> = {
-  m1: [
-    { id: '1', from: 'them', text: 'Hola, leí tu caso con atención. Con 8 años de antigüedad tenés derecho a una indemnización considerable.', time: '10:23', read: true },
-    { id: '2', from: 'them', text: 'La oferta que te hicieron parece por debajo de lo que corresponde legalmente. ¿Cuánto te ofrecieron exactamente?', time: '10:24', read: true },
-    { id: '3', from: 'me', text: 'Hola Doctor, me ofrecieron $850.000. Trabajé desde marzo de 2018 hasta junio de 2026.', time: '10:45', read: true },
-    { id: '4', from: 'me', text: 'También tengo pendientes 2 semanas de vacaciones que no tomé.', time: '10:46', read: true },
-    { id: '5', from: 'them', text: 'Perfecto. Basándome en esos datos, la indemnización correcta debería rondar los $1.800.000 aproximadamente, dependiendo de tu último salario. Tenés derecho también a la integración del mes de despido y las vacaciones no gozadas.', time: '11:02', read: true },
-    { id: '6', from: 'them', text: 'Te recomiendo no firmar NADA por ahora. ¿Podemos coordinar una videollamada para esta semana para que me compartas más detalles?', time: '11:03', read: false },
-    { id: '7', from: 'them', text: '¿Podemos coordinar una videollamada para esta semana?', time: '11:04', read: false },
-  ],
-  m2: [
-    { id: '1', from: 'them', text: 'Hola! Soy la Dra. Martínez, vi tu caso y me gustaría ayudarte.', time: 'Ayer 14:30', read: true },
-    { id: '2', from: 'me', text: 'Hola Dra., muchas gracias por contactarse.', time: 'Ayer 15:10', read: true },
-    { id: '3', from: 'them', text: 'Perfecto, envíame los documentos cuando puedas.', time: 'Ayer 15:12', read: true },
-  ],
-  m3: [
-    { id: '1', from: 'them', text: 'Recibí tu caso sobre la cuota alimentaria. Es un tema que manejo con frecuencia.', time: 'Hace 3 días', read: true },
-    { id: '2', from: 'me', text: 'Excelente, necesito actualizar la cuota porque no se ajustó en 3 años.', time: 'Hace 3 días', read: true },
-    { id: '3', from: 'them', text: 'Entendido. Voy a revisar el contrato que me mandaste.', time: 'Hace 3 días', read: true },
-  ],
+type Conversation = {
+  id: string
+  otherPerson: Profile
+  caseTitle: string | null
+  lastMessageAt: string | null
+  unreadCount: number
+  isClient: boolean
+}
+
+type Message = {
+  id: string
+  sender_id: string
+  content: string
+  created_at: string
+  is_read: boolean
+}
+
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+}
+
+function timeAgo(date: string) {
+  const diff = Date.now() - new Date(date).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 2) return 'Ahora'
+  if (mins < 60) return `Hace ${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `Hace ${hours}h`
+  return new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+}
+
+function formatMsgTime(date: string) {
+  return new Date(date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+}
+
+const AVATAR_COLORS = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-500', 'bg-rose-600']
+function avatarColor(id: string) {
+  const code = id.charCodeAt(0) + id.charCodeAt(id.length - 1)
+  return AVATAR_COLORS[code % AVATAR_COLORS.length]
 }
 
 export default function MensajesPage() {
-  const [activeId, setActiveId] = useState('m1')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
-  const [messages, setMessages] = useState(MESSAGES)
   const [search, setSearch] = useState('')
+  const [loadingConvs, setLoadingConvs] = useState(true)
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
+  const [sending, setSending] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
-  const active = CONVERSATIONS.find((c) => c.id === activeId)!
-  const msgs = messages[activeId] ?? []
+  // Load user + conversations on mount
+  useEffect(() => {
+    async function init() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoadingConvs(false); return }
+      setUserId(user.id)
 
-  const filtered = CONVERSATIONS.filter((c) =>
-    c.with.toLowerCase().includes(search.toLowerCase()) ||
-    c.caseRef.toLowerCase().includes(search.toLowerCase())
+      const { data } = await supabase
+        .from('conversations')
+        .select(`
+          id, last_message_at, client_unread, lawyer_unread, is_archived,
+          client:profiles!client_id(id, full_name),
+          lawyer:profiles!lawyer_id(id, full_name),
+          legal_cases(title)
+        `)
+        .or(`client_id.eq.${user.id},lawyer_id.eq.${user.id}`)
+        .eq('is_archived', false)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+
+      const convs: Conversation[] = (data ?? []).map((row: any) => {
+        const isClient = row.client?.id === user.id
+        const otherPerson: Profile = isClient ? row.lawyer : row.client
+        return {
+          id: row.id,
+          otherPerson: otherPerson ?? { id: '', full_name: 'Usuario' },
+          caseTitle: row.legal_cases?.title ?? null,
+          lastMessageAt: row.last_message_at,
+          unreadCount: isClient ? (row.client_unread ?? 0) : (row.lawyer_unread ?? 0),
+          isClient,
+        }
+      })
+
+      setConversations(convs)
+      if (convs.length > 0) setActiveId(convs[0].id)
+      setLoadingConvs(false)
+    }
+    init()
+  }, [])
+
+  // Load messages + subscribe to Realtime when active conversation changes
+  useEffect(() => {
+    if (!activeId || !userId) return
+
+    const supabase = createClient()
+
+    // Unsubscribe from previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
+    }
+
+    setLoadingMsgs(true)
+    setMessages([])
+
+    // Load existing messages
+    supabase
+      .from('messages')
+      .select('id, sender_id, content, created_at, is_read')
+      .eq('conversation_id', activeId)
+      .order('created_at', { ascending: true })
+      .limit(100)
+      .then(({ data }) => {
+        setMessages((data as Message[]) ?? [])
+        setLoadingMsgs(false)
+      })
+
+    // Mark messages as read
+    supabase
+      .from('messages')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('conversation_id', activeId)
+      .neq('sender_id', userId)
+      .eq('is_read', false)
+      .then(() => {
+        // Reset unread counter for this conversation
+        setConversations((prev) =>
+          prev.map((c) => c.id === activeId ? { ...c, unreadCount: 0 } : c)
+        )
+      })
+
+    // Subscribe to new messages via Realtime
+    const channel = supabase
+      .channel(`messages:${activeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message
+          setMessages((prev) => {
+            // Avoid duplicates (optimistic update + realtime)
+            if (prev.some((m) => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+          // Update conversation list: last message time + unread
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== activeId) return c
+              const isNewMine = newMsg.sender_id === userId
+              return {
+                ...c,
+                lastMessageAt: newMsg.created_at,
+                unreadCount: isNewMine ? c.unreadCount : 0, // we're looking at it
+              }
+            })
+          )
+        }
+      )
+      .subscribe()
+
+    channelRef.current = channel
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [activeId, userId])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const sendMessage = useCallback(async () => {
+    const trimmed = text.trim()
+    if (!trimmed || !activeId || !userId || sending) return
+    setSending(true)
+    setText('')
+
+    const supabase = createClient()
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`
+    const optimistic: Message = {
+      id: tempId,
+      sender_id: userId,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      is_read: false,
+    }
+    setMessages((prev) => [...prev, optimistic])
+
+    const conv = conversations.find((c) => c.id === activeId)
+    const unreadField = conv?.isClient ? 'lawyer_unread' : 'client_unread'
+
+    // Insert message
+    const { data: inserted, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeId,
+        sender_id: userId,
+        content: trimmed,
+        type: 'text',
+      })
+      .select('id, sender_id, content, created_at, is_read')
+      .single()
+
+    if (error) {
+      // Rollback optimistic update
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setText(trimmed)
+    } else {
+      // Replace temp with real
+      setMessages((prev) => prev.map((m) => m.id === tempId ? (inserted as Message) : m))
+      // Update conversation last_message_at and other person's unread
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_at: inserted.created_at,
+          [unreadField]: (conv?.unreadCount ?? 0) + 1,
+        })
+        .eq('id', activeId)
+    }
+
+    setSending(false)
+  }, [text, activeId, userId, sending, conversations])
+
+  const filteredConvs = conversations.filter((c) =>
+    c.otherPerson.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.caseTitle ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
-  function sendMessage() {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    const newMsg = { id: Date.now().toString(), from: 'me' as const, text: trimmed, time: 'Ahora', read: false }
-    setMessages((prev) => ({ ...prev, [activeId]: [...(prev[activeId] ?? []), newMsg] }))
-    setText('')
-  }
+  const activeConv = conversations.find((c) => c.id === activeId)
 
   return (
     <div className="h-[calc(100vh-8rem)] flex rounded-2xl border border-slate-200 bg-white overflow-hidden">
-      {/* Sidebar */}
+      {/* Conversation list */}
       <div className="w-72 shrink-0 border-r border-slate-200 flex flex-col">
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-bold text-slate-900 mb-3">Mensajes</h2>
@@ -100,131 +264,181 @@ export default function MensajesPage() {
             />
           </div>
         </div>
+
         <div className="flex-1 overflow-y-auto">
-          {filtered.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => setActiveId(conv.id)}
-              className={`w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors border-b border-slate-50 ${activeId === conv.id ? 'bg-blue-50' : ''}`}
-            >
-              <div className="relative shrink-0">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${conv.avatarBg} text-white font-bold text-sm`}>
-                  {conv.avatar}
-                </div>
-                {conv.online && (
-                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-white" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <p className={`text-sm truncate ${conv.unread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
-                    {conv.with}
-                  </p>
-                  <span className="text-[10px] text-slate-400 shrink-0 ml-1">{conv.time}</span>
-                </div>
-                <p className="text-[10px] text-blue-500 mb-0.5 truncate">{conv.caseRef}</p>
-                <p className={`text-xs truncate ${conv.unread ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>
-                  {conv.lastMessage}
-                </p>
-              </div>
-              {conv.unread > 0 && (
-                <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                  {conv.unread}
-                </span>
-              )}
-            </button>
-          ))}
+          {loadingConvs ? (
+            <div className="flex items-center justify-center h-32">
+              <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+              </svg>
+            </div>
+          ) : filteredConvs.length === 0 ? (
+            <div className="p-6 text-center">
+              <MessageSquare className="h-8 w-8 mx-auto text-slate-200 mb-2" />
+              <p className="text-xs text-slate-400">
+                {conversations.length === 0
+                  ? 'No tenés conversaciones todavía.'
+                  : 'Sin resultados.'}
+              </p>
+            </div>
+          ) : (
+            filteredConvs.map((conv) => {
+              const color = avatarColor(conv.otherPerson.id || conv.id)
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => setActiveId(conv.id)}
+                  className={`w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors border-b border-slate-50 ${activeId === conv.id ? 'bg-blue-50' : ''}`}
+                >
+                  <div className="relative shrink-0">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${color} text-white font-bold text-sm`}>
+                      {getInitials(conv.otherPerson.full_name)}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                        {conv.otherPerson.full_name}
+                      </p>
+                      {conv.lastMessageAt && (
+                        <span className="text-[10px] text-slate-400 shrink-0 ml-1">
+                          {timeAgo(conv.lastMessageAt)}
+                        </span>
+                      )}
+                    </div>
+                    {conv.caseTitle && (
+                      <p className="text-[10px] text-blue-500 mb-0.5 truncate">{conv.caseTitle}</p>
+                    )}
+                  </div>
+                  {conv.unreadCount > 0 && (
+                    <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                      {conv.unreadCount}
+                    </span>
+                  )}
+                </button>
+              )
+            })
+          )}
         </div>
       </div>
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-200">
-          <div className="relative shrink-0">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${active.avatarBg} text-white font-bold text-sm`}>
-              {active.avatar}
-            </div>
-            {active.online && (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-white" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900">{active.with}</p>
-            <p className="text-xs text-slate-400">{active.online ? 'En línea' : 'Última vez hace 2 horas'} · Caso: {active.caseRef}</p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700">
-              <Phone className="h-4 w-4" />
-            </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700">
-              <Video className="h-4 w-4" />
-            </button>
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700">
-              <MoreVertical className="h-4 w-4" />
-            </button>
+      {!activeConv ? (
+        <div className="flex-1 flex items-center justify-center text-slate-400">
+          <div className="text-center">
+            <MessageSquare className="h-12 w-12 mx-auto text-slate-200 mb-3" />
+            <p className="text-sm font-medium text-slate-500">Seleccioná una conversación</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {conversations.length === 0
+                ? 'Las conversaciones aparecen cuando aceptás una propuesta.'
+                : 'O elegí una del panel izquierdo.'}
+            </p>
           </div>
         </div>
+      ) : (
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-200">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${avatarColor(activeConv.otherPerson.id)} text-white font-bold text-sm shrink-0`}>
+              {getInitials(activeConv.otherPerson.full_name)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-900">{activeConv.otherPerson.full_name}</p>
+              {activeConv.caseTitle && (
+                <p className="text-xs text-slate-400 truncate">Caso: {activeConv.caseTitle}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
+                <Phone className="h-4 w-4" />
+              </button>
+              <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
+                <Video className="h-4 w-4" />
+              </button>
+              <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {msgs.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-xs sm:max-w-md rounded-2xl px-4 py-3 ${
-                  msg.from === 'me'
-                    ? 'bg-blue-600 text-white rounded-br-sm'
-                    : 'bg-slate-100 text-slate-900 rounded-bl-sm'
-                }`}
-              >
-                <p className="text-sm leading-relaxed">{msg.text}</p>
-                <div className={`flex items-center gap-1 mt-1 justify-end ${msg.from === 'me' ? 'text-blue-200' : 'text-slate-400'}`}>
-                  <span className="text-[10px]">{msg.time}</span>
-                  {msg.from === 'me' && (
-                    msg.read
-                      ? <CheckCheck className="h-3 w-3" />
-                      : <Check className="h-3 w-3" />
-                  )}
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+            {loadingMsgs ? (
+              <div className="flex items-center justify-center h-32">
+                <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                </svg>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-center">
+                <div>
+                  <p className="text-sm text-slate-400">Todavía no hay mensajes.</p>
+                  <p className="text-xs text-slate-400 mt-1">¡Sé el primero en escribir!</p>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-end gap-2">
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600 shrink-0">
-              <Paperclip className="h-4 w-4" />
-            </button>
-            <div className="flex-1 min-h-[36px] max-h-32 rounded-xl border border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all px-4 py-2">
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    sendMessage()
-                  }
-                }}
-                placeholder="Escribí un mensaje..."
-                className="w-full text-sm text-slate-900 placeholder:text-slate-400 outline-none resize-none bg-transparent"
-                rows={1}
-              />
-            </div>
-            <button
-              onClick={sendMessage}
-              disabled={!text.trim()}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.sender_id === userId
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-xs sm:max-w-md rounded-2xl px-4 py-3 ${
+                        isMe
+                          ? 'bg-blue-600 text-white rounded-br-sm'
+                          : 'bg-slate-100 text-slate-900 rounded-bl-sm'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      <div className={`flex items-center gap-1 mt-1 justify-end ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>
+                        <span className="text-[10px]">{formatMsgTime(msg.created_at)}</span>
+                        {isMe && (
+                          msg.is_read
+                            ? <CheckCheck className="h-3 w-3" />
+                            : <Check className="h-3 w-3" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+            <div ref={bottomRef} />
           </div>
-          <p className="text-[10px] text-slate-400 mt-2 text-center">
-            Enter para enviar · Shift+Enter para nueva línea
-          </p>
+
+          {/* Input */}
+          <div className="p-4 border-t border-slate-200">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 min-h-[36px] max-h-32 rounded-xl border border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all px-4 py-2">
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      sendMessage()
+                    }
+                  }}
+                  placeholder="Escribí un mensaje..."
+                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 outline-none resize-none bg-transparent"
+                  rows={1}
+                />
+              </div>
+              <button
+                onClick={sendMessage}
+                disabled={!text.trim() || sending}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2 text-center">
+              Enter para enviar · Shift+Enter para nueva línea
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
