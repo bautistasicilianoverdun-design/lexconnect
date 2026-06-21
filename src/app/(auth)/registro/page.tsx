@@ -59,6 +59,7 @@ function RegisterForm() {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         data: { first_name: firstName, last_name: lastName, role },
       },
     })
@@ -154,8 +155,12 @@ function RegisterForm() {
               </div>
 
               {success && (
-                <div className="mb-5 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-                  ¡Cuenta creada! Revisá tu email para confirmar tu dirección y luego iniciá sesión.
+                <div className="mb-5 rounded-lg bg-green-50 border border-green-200 px-4 py-4 text-sm text-green-700">
+                  <p className="font-semibold mb-1">¡Cuenta creada con éxito!</p>
+                  <p>Revisá tu email y hacé click en el link de confirmación. Te vamos a redirigir al dashboard automáticamente.</p>
+                  <a href="/" className="mt-3 inline-block text-xs font-semibold text-green-800 underline">
+                    Volver al inicio →
+                  </a>
                 </div>
               )}
               {error && (
