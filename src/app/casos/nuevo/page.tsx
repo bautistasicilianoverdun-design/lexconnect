@@ -104,13 +104,13 @@ export default function NewCasePage() {
             </p>
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => router.push('/dashboard/mis-casos')}
+                onClick={() => { window.location.href = '/dashboard/mis-casos' }}
                 className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm"
               >
                 Ver mis casos
               </button>
               <button
-                onClick={() => router.push('/casos/nuevo')}
+                onClick={() => { window.location.href = '/casos/nuevo' }}
                 className="w-full h-11 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl transition-colors text-sm"
               >
                 Publicar otro caso
