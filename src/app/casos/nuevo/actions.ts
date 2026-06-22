@@ -19,6 +19,27 @@ export async function publishCase(payload: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'not_authenticated' }
 
+  // Garantizar que el perfil existe (el trigger puede no haber corrido)
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!existingProfile) {
+    const fullName =
+      (user.user_metadata?.full_name as string | undefined) ||
+      [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(' ') ||
+      user.email?.split('@')[0] ||
+      'Usuario'
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({ id: user.id, full_name: fullName, role: 'client' })
+
+    if (profileError) return { success: false, error: profileError.message }
+  }
+
   const [{ data: cat }, { data: prov }] = await Promise.all([
     supabase.from('legal_categories').select('id').eq('slug', payload.category).maybeSingle(),
     supabase.from('provinces').select('id').eq('name', payload.province).maybeSingle(),
