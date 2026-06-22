@@ -1,8 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
+import { createBrowserClient } from '@supabase/ssr'
 
 const CATEGORIES = [
   { id: 'laboral', name: 'Derecho Laboral' },
@@ -33,6 +35,7 @@ const URGENCIES = [
 ]
 
 export default function NewCasePage() {
+  const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
@@ -40,7 +43,7 @@ export default function NewCasePage() {
   const [urgency, setUrgency] = useState('medium')
   const [visibility, setVisibility] = useState('public')
   const [loading, setLoading] = useState(false)
-  const [aiDetecting, setAiDetecting] = useState(false)
+  const [error, setError] = useState('')
   const [sensitiveWarning, setSensitiveWarning] = useState(false)
 
   const SENSITIVE_PATTERNS = /\b(\d{2}\.?\d{3}\.?\d{3}|\+?54\s?\d{10,11}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+)\b/
@@ -54,9 +57,43 @@ export default function NewCasePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1500))
-    setLoading(false)
-    alert('¡Caso publicado correctamente! Los abogados recibirán tu consulta.')
+    setError('')
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('Tenés que iniciar sesión para publicar un caso.')
+      setLoading(false)
+      return
+    }
+
+    const [{ data: cat }, { data: prov }] = await Promise.all([
+      supabase.from('legal_categories').select('id').eq('slug', category).single(),
+      supabase.from('provinces').select('id').eq('name', province).single(),
+    ])
+
+    const { error: insertError } = await supabase.from('legal_cases').insert({
+      client_id: user.id,
+      title,
+      description,
+      category_id: cat?.id ?? null,
+      province_id: prov?.id ?? null,
+      urgency,
+      visibility,
+      status: 'open',
+    })
+
+    if (insertError) {
+      setError('No se pudo publicar el caso. Intentá de nuevo.')
+      setLoading(false)
+      return
+    }
+
+    router.push('/dashboard/mis-casos')
   }
 
   return (
@@ -78,6 +115,13 @@ export default function NewCasePage() {
               Describí tu situación y recibirás propuestas de abogados especializados
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Título */}
