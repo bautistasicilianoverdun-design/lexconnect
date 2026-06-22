@@ -1,10 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
-import { createBrowserClient } from '@supabase/ssr'
 
 const CATEGORIES = [
   { id: 'laboral', name: 'Derecho Laboral' },
@@ -35,7 +33,6 @@ const URGENCIES = [
 ]
 
 export default function NewCasePage() {
-  const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
@@ -59,37 +56,16 @@ export default function NewCasePage() {
     setLoading(true)
     setError('')
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    // getSession reads from cookies/localStorage without a network call
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setError('Tenés que iniciar sesión para publicar un caso.')
-      setLoading(false)
-      return
-    }
-
-    const [{ data: cat }, { data: prov }] = await Promise.all([
-      supabase.from('legal_categories').select('id').eq('slug', category).single(),
-      supabase.from('provinces').select('id').eq('name', province).single(),
-    ])
-
-    const { error: insertError } = await supabase.from('legal_cases').insert({
-      client_id: session.user.id,
-      title,
-      description,
-      category_id: cat?.id ?? null,
-      province_id: prov?.id ?? null,
-      urgency,
-      visibility,
-      status: 'open',
+    const res = await fetch('/api/cases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description, category, province, urgency, visibility }),
     })
 
-    if (insertError) {
-      setError(`Error: ${insertError.message}`)
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || 'No se pudo publicar el caso. Intentá de nuevo.')
       setLoading(false)
       return
     }
