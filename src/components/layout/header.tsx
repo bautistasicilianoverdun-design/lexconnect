@@ -30,9 +30,10 @@ export function Header({ user: userProp }: HeaderProps) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    async function loadUser() {
-      const { data: { session } } = await supabase.auth.getSession()
+    async function loadUser(session: { user: { id: string; email?: string } } | null) {
       if (!session) { setSessionUser(null); return }
+      // Show nav link immediately with fallback, then enrich with profile
+      setSessionUser({ full_name: session.user.email ?? 'Usuario', role: 'client', avatar_url: null })
       const { data } = await supabase
         .from('profiles')
         .select('full_name, role, avatar_url')
@@ -41,12 +42,10 @@ export function Header({ user: userProp }: HeaderProps) {
       if (data) setSessionUser(data)
     }
 
-    loadUser()
+    supabase.auth.getSession().then(({ data: { session } }) => loadUser(session))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) { setSessionUser(null); return }
-      supabase.from('profiles').select('full_name, role, avatar_url').eq('id', session.user.id).single()
-        .then(({ data }) => { if (data) setSessionUser(data) })
+      loadUser(session)
     })
 
     return () => subscription.unsubscribe()
