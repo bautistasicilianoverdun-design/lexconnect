@@ -1,12 +1,13 @@
 import {
   MapPin, Star, CheckCircle2, Clock, MessageSquare, Video,
-  Briefcase, GraduationCap, Globe, Shield, Heart, Share2, BookOpen,
+  Briefcase, GraduationCap, Globe, Shield, Share2, BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { createClient } from '@/lib/supabase/server'
+import FavoriteButton from '@/components/FavoriteButton'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -201,9 +202,7 @@ export default async function LawyerProfilePage({
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors" title="Guardar">
-                      <Heart className="h-4 w-4 text-slate-500" />
-                    </button>
+                    <FavoriteButton lawyerProfileId={lp.id} />
                     <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors" title="Compartir">
                       <Share2 className="h-4 w-4 text-slate-500" />
                     </button>
