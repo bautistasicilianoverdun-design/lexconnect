@@ -64,8 +64,9 @@ export default function NewCasePage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // getSession reads from cookies/localStorage without a network call
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       setError('Tenés que iniciar sesión para publicar un caso.')
       setLoading(false)
       return
@@ -77,7 +78,7 @@ export default function NewCasePage() {
     ])
 
     const { error: insertError } = await supabase.from('legal_cases').insert({
-      client_id: user.id,
+      client_id: session.user.id,
       title,
       description,
       category_id: cat?.id ?? null,
@@ -88,12 +89,12 @@ export default function NewCasePage() {
     })
 
     if (insertError) {
-      setError('No se pudo publicar el caso. Intentá de nuevo.')
+      setError(`Error: ${insertError.message}`)
       setLoading(false)
       return
     }
 
-    router.push('/dashboard/mis-casos')
+    window.location.href = '/dashboard/mis-casos'
   }
 
   return (
