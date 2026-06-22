@@ -1,23 +1,69 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, Scale, ChevronDown, Bell, MessageSquare, Search } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
 
-interface HeaderProps {
-  user?: {
-    full_name: string
-    avatar_url?: string | null
-    role: string
-  } | null
+type UserData = {
+  full_name: string
+  avatar_url?: string | null
+  role: string
 }
 
-export function Header({ user }: HeaderProps) {
+interface HeaderProps {
+  user?: UserData | null
+}
+
+export function Header({ user: userProp }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [sessionUser, setSessionUser] = useState<UserData | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    async function loadUser() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setSessionUser(null); return }
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, role, avatar_url')
+        .eq('id', session.user.id)
+        .single()
+      if (data) setSessionUser(data)
+    }
+
+    loadUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session) { setSessionUser(null); return }
+      supabase.from('profiles').select('full_name, role, avatar_url').eq('id', session.user.id).single()
+        .then(({ data }) => { if (data) setSessionUser(data) })
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function handleLogout() {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    await supabase.auth.signOut()
+    setSessionUser(null)
+    router.push('/')
+    router.refresh()
+  }
+
+  const user = userProp ?? sessionUser
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -38,6 +84,7 @@ export function Header({ user }: HeaderProps) {
             <NavLink href="/casos">Casos</NavLink>
             <NavLink href="/como-funciona">Cómo funciona</NavLink>
             <NavLink href="/precios">Precios</NavLink>
+            {user && <NavLink href="/dashboard">Mi perfil</NavLink>}
           </nav>
 
           {/* Actions */}
@@ -50,7 +97,7 @@ export function Header({ user }: HeaderProps) {
                   </Link>
                 </Button>
                 <Button variant="ghost" size="icon" asChild>
-                  <Link href="/mensajes">
+                  <Link href="/dashboard/mensajes">
                     <MessageSquare className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -74,26 +121,26 @@ export function Header({ user }: HeaderProps) {
                     <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-background shadow-lg py-1 z-50">
                       <div className="px-3 py-2 border-b border-border">
                         <p className="text-sm font-medium">{user.full_name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{user.role === 'lawyer' ? 'Abogado' : user.role === 'client' ? 'Cliente' : 'Estudio'}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {user.role === 'lawyer' ? 'Abogado' : user.role === 'client' ? 'Cliente' : 'Estudio'}
+                        </p>
                       </div>
                       <UserMenuItem href="/dashboard">Mi Panel</UserMenuItem>
-                      <UserMenuItem href="/perfil">Mi Perfil</UserMenuItem>
+                      <UserMenuItem href="/dashboard/perfil">Mi Perfil</UserMenuItem>
                       {user.role === 'lawyer' && (
-                        <UserMenuItem href="/dashboard/casos">Mis Casos</UserMenuItem>
+                        <UserMenuItem href="/dashboard/casos-disponibles">Casos disponibles</UserMenuItem>
                       )}
                       {user.role === 'client' && (
-                        <UserMenuItem href="/dashboard/publicar">Publicar Caso</UserMenuItem>
+                        <UserMenuItem href="/dashboard/mis-casos">Mis Casos</UserMenuItem>
                       )}
-                      <UserMenuItem href="/configuracion">Configuración</UserMenuItem>
+                      <UserMenuItem href="/dashboard/configuracion">Configuración</UserMenuItem>
                       <div className="border-t border-border mt-1 pt-1">
-                        <form action="/auth/signout" method="post">
-                          <button
-                            type="submit"
-                            className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                          >
-                            Cerrar sesión
-                          </button>
-                        </form>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          Cerrar sesión
+                        </button>
                       </div>
                     </div>
                   )}
@@ -127,6 +174,9 @@ export function Header({ user }: HeaderProps) {
           <MobileNavLink href="/casos" onClick={() => setMobileOpen(false)}>Casos</MobileNavLink>
           <MobileNavLink href="/como-funciona" onClick={() => setMobileOpen(false)}>Cómo funciona</MobileNavLink>
           <MobileNavLink href="/precios" onClick={() => setMobileOpen(false)}>Precios</MobileNavLink>
+          {user && (
+            <MobileNavLink href="/dashboard" onClick={() => setMobileOpen(false)}>Mi perfil</MobileNavLink>
+          )}
           {!user && (
             <div className="flex gap-2 pt-2 border-t border-border">
               <Button variant="outline" className="flex-1" asChild>
