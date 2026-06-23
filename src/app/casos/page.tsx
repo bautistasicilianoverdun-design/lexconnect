@@ -68,6 +68,7 @@ function CasosContent() {
   const [category, setCategory] = useState(searchParams.get('categoria') ?? 'todos')
   const [sortBy, setSortBy]   = useState('recent')
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [roleLoaded, setRoleLoaded] = useState(false)
 
   // Sync URL params when they change
   useEffect(() => {
@@ -88,6 +89,7 @@ function CasosContent() {
           .maybeSingle()
         setUserRole(profile?.role ?? null)
       }
+      setRoleLoaded(true)
 
       const { data } = await supabase
         .from('legal_cases')
@@ -155,7 +157,7 @@ function CasosContent() {
                 <h1 className="text-2xl font-bold text-slate-900">Casos legales publicados</h1>
                 <p className="text-sm text-slate-500 mt-1">Personas buscando asesoramiento legal en Argentina</p>
               </div>
-              {userRole !== 'lawyer' && userRole !== 'firm_admin' && (
+              {roleLoaded && userRole !== 'lawyer' && userRole !== 'firm_admin' && (
                 <Link
                   href="/casos/nuevo"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
@@ -197,7 +199,7 @@ function CasosContent() {
         </div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          {(userRole === 'lawyer' || userRole === 'firm_admin') ? (
+          {roleLoaded && ((userRole === 'lawyer' || userRole === 'firm_admin') ? (
             <div className="mb-6 flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
               <AlertCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
               <div>
@@ -219,7 +221,7 @@ function CasosContent() {
                 </p>
               </div>
             </div>
-          )}
+          ))}
 
           <div className="flex items-center justify-between mb-5">
             {loading ? (
@@ -303,7 +305,7 @@ function CasosContent() {
             </div>
           )}
 
-          {userRole !== 'lawyer' && userRole !== 'firm_admin' && (
+          {roleLoaded && userRole !== 'lawyer' && userRole !== 'firm_admin' && (
             <div className="mt-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-center text-white">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-80" />
               <h3 className="font-bold text-lg mb-2">¿Tenés un caso legal?</h3>

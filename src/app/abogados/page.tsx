@@ -81,6 +81,7 @@ function LawyersContent() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([])
   const [dbLoading, setDbLoading] = useState(true)
   const [isPro, setIsPro] = useState(false)
+  const [roleLoaded, setRoleLoaded] = useState(false)
 
   const [query, setQuery]               = useState(searchParams.get('q') ?? '')
   const [category, setCategory]         = useState(searchParams.get('categoria') ?? 'todos')
@@ -95,10 +96,11 @@ function LawyersContent() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
+      if (!user) { setRoleLoaded(true); return }
       supabase.from('profiles').select('role').eq('id', user.id).single()
         .then(({ data }) => {
           if (data?.role === 'lawyer' || data?.role === 'firm_admin') setIsPro(true)
+          setRoleLoaded(true)
         })
     })
   }, [])
@@ -232,7 +234,7 @@ function LawyersContent() {
         <div className="bg-white border-b border-slate-200 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h1 className="text-2xl font-bold text-slate-900 mb-6">
-              {isPro ? 'Casos en Argentina' : 'Abogados en Argentina'}
+              {!roleLoaded ? '' : isPro ? 'Casos en Argentina' : 'Abogados en Argentina'}
             </h1>
 
             <form onSubmit={e => { e.preventDefault(); setPage(1) }} className="flex flex-col sm:flex-row gap-3">
@@ -242,7 +244,7 @@ function LawyersContent() {
                   type="text"
                   value={query}
                   onChange={e => { setQuery(e.target.value); setPage(1) }}
-                  placeholder={isPro ? 'Buscar por especialidad...' : 'Buscar por nombre, especialidad o ciudad...'}
+                  placeholder={!roleLoaded ? '' : isPro ? 'Buscar por especialidad...' : 'Buscar por nombre, especialidad o ciudad...'}
                   className="flex-1 text-sm outline-none placeholder:text-slate-400"
                 />
                 {query && (
@@ -327,7 +329,7 @@ function LawyersContent() {
                     : <><span className="font-semibold text-slate-900">{filtered.length}</span> abogado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</>
                   }
                 </p>
-                {!isPro && (
+                {roleLoaded && !isPro && (
                   <select
                     value={sort}
                     onChange={e => { setSort(e.target.value as SortKey); setPage(1) }}
