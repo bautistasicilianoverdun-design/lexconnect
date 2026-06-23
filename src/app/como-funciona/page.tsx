@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { createClient } from '@/lib/supabase/server'
 
 const CLIENT_STEPS = [
   {
@@ -114,7 +115,11 @@ const FAQS = [
   },
 ]
 
-export default function ComoFuncionaPage() {
+export default async function ComoFuncionaPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
+
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />
@@ -188,9 +193,11 @@ export default function ComoFuncionaPage() {
               ))}
             </div>
             <div className="mt-10 flex gap-3 flex-wrap">
-              <Link href="/registro?rol=abogado" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-colors text-sm">
-                Crear perfil gratis <ArrowRight className="h-4 w-4" />
-              </Link>
+              {!isLoggedIn && (
+                <Link href="/registro?rol=abogado" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-colors text-sm">
+                  Crear perfil gratis <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
               <Link href="/precios" className="inline-flex items-center gap-2 px-6 py-3 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors text-sm">
                 Ver planes y precios
               </Link>
@@ -237,22 +244,24 @@ export default function ComoFuncionaPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-20 bg-blue-600 text-center">
-          <div className="mx-auto max-w-2xl px-4">
-            <h2 className="text-3xl font-bold text-white mb-4">¿Listo para empezar?</h2>
-            <p className="text-blue-100 mb-8">
-              Registrate gratis y encontrá el abogado que necesitás hoy.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/registro?rol=cliente" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors">
-                Soy cliente <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/registro?rol=abogado" className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white/40 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
-                Soy abogado
-              </Link>
+        {!isLoggedIn && (
+          <section className="py-20 bg-blue-600 text-center">
+            <div className="mx-auto max-w-2xl px-4">
+              <h2 className="text-3xl font-bold text-white mb-4">¿Listo para empezar?</h2>
+              <p className="text-blue-100 mb-8">
+                Registrate gratis y encontrá el abogado que necesitás hoy.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/registro?rol=cliente" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors">
+                  Soy cliente <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/registro?rol=abogado" className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white/40 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
+                  Soy abogado
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
       <Footer />
     </div>

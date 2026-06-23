@@ -12,6 +12,7 @@ type Conversation = {
   caseTitle: string | null
   lastMessageAt: string | null
   unreadCount: number
+  otherUnread: number
   isClient: boolean
 }
 
@@ -89,6 +90,7 @@ export default function MensajesPage() {
           caseTitle: row.legal_cases?.title ?? null,
           lastMessageAt: row.last_message_at,
           unreadCount: isClient ? (row.client_unread ?? 0) : (row.lawyer_unread ?? 0),
+          otherUnread: isClient ? (row.lawyer_unread ?? 0) : (row.client_unread ?? 0),
           isClient,
         }
       })
@@ -229,13 +231,17 @@ export default function MensajesPage() {
       // Replace temp with real
       setMessages((prev) => prev.map((m) => m.id === tempId ? (inserted as Message) : m))
       // Update conversation last_message_at and other person's unread
+      const newOtherUnread = (conv?.otherUnread ?? 0) + 1
       await supabase
         .from('conversations')
         .update({
           last_message_at: inserted.created_at,
-          [unreadField]: (conv?.unreadCount ?? 0) + 1,
+          [unreadField]: newOtherUnread,
         })
         .eq('id', activeId)
+      setConversations((prev) =>
+        prev.map((c) => c.id === activeId ? { ...c, otherUnread: newOtherUnread } : c)
+      )
     }
 
     setSending(false)

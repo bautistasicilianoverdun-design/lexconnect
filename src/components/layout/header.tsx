@@ -78,11 +78,15 @@ export function Header({ user: userProp }: HeaderProps) {
 
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-1">
-            <NavLink href="/abogados">Abogados</NavLink>
+            <NavLink href="/abogados">
+              {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Búsqueda' : 'Abogados'}
+            </NavLink>
             <NavLink href="/estudios">Estudios</NavLink>
             <NavLink href="/casos">Casos</NavLink>
             <NavLink href="/como-funciona">Cómo funciona</NavLink>
-            <NavLink href="/precios">Precios</NavLink>
+            {(!user || user.role === 'lawyer' || user.role === 'firm_admin') && (
+              <NavLink href="/precios">Precios</NavLink>
+            )}
             {user && <NavLink href="/dashboard">Mi perfil</NavLink>}
           </nav>
 
@@ -168,11 +172,15 @@ export function Header({ user: userProp }: HeaderProps) {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
-          <MobileNavLink href="/abogados" onClick={() => setMobileOpen(false)}>Abogados</MobileNavLink>
+          <MobileNavLink href="/abogados" onClick={() => setMobileOpen(false)}>
+            {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Búsqueda' : 'Abogados'}
+          </MobileNavLink>
           <MobileNavLink href="/estudios" onClick={() => setMobileOpen(false)}>Estudios</MobileNavLink>
           <MobileNavLink href="/casos" onClick={() => setMobileOpen(false)}>Casos</MobileNavLink>
           <MobileNavLink href="/como-funciona" onClick={() => setMobileOpen(false)}>Cómo funciona</MobileNavLink>
-          <MobileNavLink href="/precios" onClick={() => setMobileOpen(false)}>Precios</MobileNavLink>
+          {(!user || user.role === 'lawyer' || user.role === 'firm_admin') && (
+            <MobileNavLink href="/precios" onClick={() => setMobileOpen(false)}>Precios</MobileNavLink>
+          )}
           {user && (
             <MobileNavLink href="/dashboard" onClick={() => setMobileOpen(false)}>Mi perfil</MobileNavLink>
           )}

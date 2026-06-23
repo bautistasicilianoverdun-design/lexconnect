@@ -55,7 +55,7 @@ function RegisterForm() {
     const firstName = (form.elements.namedItem('first_name') as HTMLInputElement)?.value ?? ''
     const lastName = (form.elements.namedItem('last_name') as HTMLInputElement)?.value ?? ''
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data: signUpData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -65,10 +65,30 @@ function RegisterForm() {
     })
 
     if (authError) {
-      setError(authError.message)
+      const msg = authError.message ?? ''
+      if (
+        msg.toLowerCase().includes('already') ||
+        msg.toLowerCase().includes('registered') ||
+        msg.toLowerCase().includes('exists')
+      ) {
+        setError('Ya existe una cuenta con este email. ¿Querés iniciar sesión?')
+      } else if (!msg || msg === '{}' || msg.trim() === '') {
+        setError('No se pudo crear la cuenta. Esperá unos minutos e intentá de nuevo.')
+      } else {
+        setError(msg)
+      }
       setLoading(false)
       return
     }
+
+    // Supabase no devuelve error cuando el email ya existe con confirmación habilitada
+    // En cambio devuelve un usuario con identities vacío
+    if ((signUpData.user?.identities?.length ?? 0) === 0) {
+      setError('Ya existe una cuenta con este email. ¿Querés iniciar sesión?')
+      setLoading(false)
+      return
+    }
+
     setSuccess(true)
     setLoading(false)
   }

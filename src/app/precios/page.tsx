@@ -1,7 +1,9 @@
 import { Check, Star, Zap, Building, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { createClient } from '@/lib/supabase/server'
 
 const PLANS = [
   {
@@ -119,7 +121,14 @@ const FAQ = [
   },
 ]
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (data?.role === 'client') redirect('/')
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />

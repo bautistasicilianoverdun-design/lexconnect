@@ -8,6 +8,7 @@ type Favorite = {
   created_at: string
   lawyer_profiles: {
     id: string
+    slug: string | null
     rating_avg: number | null
     rating_count: number | null
     verification_status: string | null
@@ -53,7 +54,7 @@ export default function FavoritosPage() {
         .select(`
           created_at,
           lawyer_profiles(
-            id, rating_avg, rating_count,
+            id, slug, rating_avg, rating_count,
             verification_status, cases_handled, response_time_hours,
             lawyer_specialties(is_primary, legal_categories(name)),
             profiles(full_name, city, avatar_url)
@@ -184,7 +185,7 @@ export default function FavoritosPage() {
 
               <div className="flex gap-2">
                 <Link
-                  href={`/abogados/${lp?.id ?? ''}`}
+                  href={`/abogados/${lp?.slug ?? lp?.id ?? ''}`}
                   className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center transition-colors"
                 >
                   Ver perfil

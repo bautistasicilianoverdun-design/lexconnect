@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ProfileForm from '@/components/dashboard/profile-form'
+import LawyerProfileForm, { type LawyerProfileData, type Category } from '@/components/dashboard/lawyer-profile-form'
 import {
   FileText, MessageSquare, Clock, ChevronRight,
   Eye, Plus, MapPin,
@@ -76,6 +77,40 @@ export default async function PerfilPage() {
   if (!profile) redirect('/iniciar-sesion')
 
   const isClient = profile.role === 'client'
+  const isLawyer = profile.role === 'lawyer' || profile.role === 'firm_admin'
+
+  let lawyerProfileData: LawyerProfileData | null = null
+  let categories: Category[] = []
+
+  if (isLawyer) {
+    const [{ data: lp }, { data: cats }] = await Promise.all([
+      supabase
+        .from('lawyer_profiles')
+        .select('id, license_number, license_province_id, university, graduation_year, response_time_hours, accepts_new_clients, lawyer_specialties(category_id, is_primary, years_experience)')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('legal_categories')
+        .select('id, name')
+        .order('name'),
+    ])
+
+    if (lp) {
+      const specialties = (Array.isArray(lp.lawyer_specialties) ? lp.lawyer_specialties : []) as Array<{
+        category_id: string; is_primary: boolean; years_experience: number | null
+      }>
+      lawyerProfileData = {
+        license_number: lp.license_number ?? null,
+        license_province_id: lp.license_province_id ?? null,
+        university: lp.university ?? null,
+        graduation_year: lp.graduation_year ?? null,
+        response_time_hours: lp.response_time_hours ?? null,
+        accepts_new_clients: lp.accepts_new_clients ?? true,
+        specialties,
+      }
+    }
+    categories = (cats as Category[] | null) ?? []
+  }
 
   // Resolve the "other person" in each conversation
   const convList = (conversations ?? []).map((row: any) => {
@@ -103,6 +138,14 @@ export default async function PerfilPage() {
           proposals_count: proposalsCount ?? 0,
         }}
       />
+
+      {/* Perfil profesional — solo abogados */}
+      {isLawyer && (
+        <LawyerProfileForm
+          lawyerProfile={lawyerProfileData}
+          categories={categories}
+        />
+      )}
 
       {/* Casos publicados — solo clientes */}
       {isClient && (

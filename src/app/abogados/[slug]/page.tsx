@@ -193,7 +193,7 @@ export default async function LawyerProfilePage({
                         </span>
                       )}
                       {profile?.website && (
-                        <a href={`https://${profile.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                        <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
                           <Globe className="h-3.5 w-3.5" />
                           {profile.website}
                         </a>

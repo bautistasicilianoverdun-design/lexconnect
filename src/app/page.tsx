@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { createClient } from "@/lib/supabase/server";
 
 const LEGAL_CATEGORIES = [
   { icon: Briefcase, name: "Laboral", slug: "laboral", color: "bg-blue-50 text-blue-600" },
@@ -143,7 +144,17 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  let isLawyer = false
+  let isPro = false
+  if (user) {
+    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    isLawyer = data?.role === 'lawyer' || data?.role === 'firm_admin'
+    isPro = data?.role === 'lawyer' || data?.role === 'firm_admin'
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />
@@ -202,14 +213,14 @@ export default function HomePage() {
                 Especialidades legales
               </h2>
               <p className="mt-3 text-slate-500 max-w-xl mx-auto">
-                Encontrá el especialista exacto para tu tipo de caso
+                {isLawyer ? 'Encontrá un caso para tu perfil' : 'Encontrá el especialista exacto para tu tipo de caso'}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {LEGAL_CATEGORIES.map(({ icon: Icon, name, slug, color }) => (
                 <Link
                   key={slug}
-                  href={`/abogados?categoria=${slug}`}
+                  href={isLawyer ? `/casos?categoria=${slug}` : `/abogados?categoria=${slug}`}
                   className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all duration-300 bg-white text-center"
                 >
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} transition-transform group-hover:scale-110`}>
@@ -372,13 +383,15 @@ export default function HomePage() {
                   Perfil gratuito. Sin comisiones ocultas.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/registro?rol=abogado"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
-                  >
-                    Crear perfil gratis
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  {!isPro && (
+                    <Link
+                      href="/registro?rol=abogado"
+                      className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
+                    >
+                      Crear perfil gratis
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
                   <Link
                     href="/precios"
                     className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-white/20 hover:bg-white/10 text-white rounded-xl transition-colors"
@@ -392,7 +405,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── IA ASSISTANT TEASER ─── */}
-        <section className="py-20 bg-slate-50">
+        {!isLawyer && <section className="py-20 bg-slate-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
@@ -460,7 +473,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </section>
+        </section>}
 
         {/* ─── COMUNICACIÓN ─── */}
         <section className="py-20 bg-white">

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { TrendingUp, Star, MessageSquare, Eye, CheckCircle2, Clock, Award, ArrowUpRight } from 'lucide-react'
+import { TrendingUp, Star, Eye, CheckCircle2, Award, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 const WEEKS = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']
@@ -35,7 +35,7 @@ export default async function EstadisticasPage() {
 
   const { data: lp } = await supabase
     .from('lawyer_profiles')
-    .select('id, rating_avg, rating_count, cases_count, views_count')
+    .select('id, rating_avg, rating_count, cases_handled, consultations_answered')
     .eq('user_id', user.id)
     .single()
 
@@ -54,12 +54,13 @@ export default async function EstadisticasPage() {
       .eq('status', 'accepted'),
   ])
 
-  const sent     = totalProposals ?? 0
-  const accepted = acceptedProposals ?? 0
-  const rate     = sent > 0 ? Math.round((accepted / sent) * 100) : 0
-  const rating   = lp?.rating_avg ?? 0
-  const reviews  = lp?.rating_count ?? 0
-  const views    = lp?.views_count ?? 0
+  const sent        = totalProposals ?? 0
+  const accepted    = acceptedProposals ?? 0
+  const rate        = sent > 0 ? Math.round((accepted / sent) * 100) : 0
+  const rating      = lp?.rating_avg ?? 0
+  const reviews     = lp?.rating_count ?? 0
+  const casesHandled = lp?.cases_handled ?? 0
+  const consultations = lp?.consultations_answered ?? 0
 
   return (
     <div className="space-y-6">
@@ -73,7 +74,7 @@ export default async function EstadisticasPage() {
         {[
           { label: 'Propuestas enviadas',  value: String(sent),     delta: `${accepted} aceptadas`,     icon: TrendingUp,   color: 'text-blue-600',   bg: 'bg-blue-50' },
           { label: 'Tasa de aceptación',   value: `${rate}%`,       delta: `${accepted} de ${sent}`,    icon: CheckCircle2, color: 'text-green-600',  bg: 'bg-green-50' },
-          { label: 'Visitas al perfil',    value: String(views),    delta: 'total acumulado',            icon: Eye,          color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Consultas respondidas', value: String(consultations), delta: 'total acumulado',        icon: Eye,          color: 'text-purple-600', bg: 'bg-purple-50' },
           { label: 'Valoración promedio',  value: rating > 0 ? rating.toFixed(1) : '—', delta: `${reviews} reseñas`, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(({ label, value, delta, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-5">
@@ -105,7 +106,7 @@ export default async function EstadisticasPage() {
               <p className="text-xs text-slate-400 mt-0.5">Total acumulado</p>
             </div>
           </div>
-          <MiniBarChart data={[0, 0, 0, views]} color="bg-purple-500" />
+          <MiniBarChart data={[0, 0, 0, consultations]} color="bg-purple-500" />
         </div>
       </div>
 
@@ -115,7 +116,7 @@ export default async function EstadisticasPage() {
             <Award className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-xl font-bold text-slate-900">{lp?.cases_count ?? 0}</p>
+            <p className="text-xl font-bold text-slate-900">{casesHandled}</p>
             <p className="text-xs text-slate-400">Casos resueltos</p>
           </div>
         </div>

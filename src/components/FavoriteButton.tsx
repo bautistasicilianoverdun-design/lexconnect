@@ -1,58 +1,38 @@
 'use client'
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, useTransition } from 'react'
 import { Heart } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { checkFavorite, toggleFavorite } from '@/app/abogados/[slug]/actions'
 
 export default function FavoriteButton({ lawyerProfileId }: { lawyerProfileId: string }) {
-  const [saved, setSaved]       = useState(false)
-  const [loading, setLoading]   = useState(true)
-  const [userId, setUserId]     = useState<string | null>(null)
+  const [saved, setSaved]         = useState(false)
+  const [loading, setLoading]     = useState(true)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    async function check() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-      setUserId(user.id)
-
-      const { data } = await supabase
-        .from('client_favorites')
-        .select('client_id')
-        .eq('client_id', user.id)
-        .eq('lawyer_id', lawyerProfileId)
-        .maybeSingle()
-
-      setSaved(!!data)
+    checkFavorite(lawyerProfileId).then((result) => {
+      setSaved(result)
       setLoading(false)
-    }
-    check()
+    })
   }, [lawyerProfileId])
 
-  async function toggle() {
-    if (!userId) {
-      window.location.href = '/iniciar-sesion'
-      return
-    }
-    const supabase = createClient()
-    if (saved) {
-      setSaved(false)
-      await supabase
-        .from('client_favorites')
-        .delete()
-        .eq('client_id', userId)
-        .eq('lawyer_id', lawyerProfileId)
-    } else {
-      setSaved(true)
-      await supabase
-        .from('client_favorites')
-        .insert({ client_id: userId, lawyer_id: lawyerProfileId })
-    }
+  function toggle() {
+    startTransition(async () => {
+      const result = await toggleFavorite(lawyerProfileId, saved)
+      if (result.error === 'not_authenticated') {
+        window.location.href = '/iniciar-sesion'
+        return
+      }
+      setSaved(result.saved)
+    })
   }
+
+  const isDisabled = loading || isPending
 
   return (
     <button
       onClick={toggle}
-      disabled={loading}
+      disabled={isDisabled}
       title={saved ? 'Quitar de favoritos' : 'Guardar en favoritos'}
       className={`h-9 w-9 flex items-center justify-center rounded-xl border transition-colors disabled:opacity-40
         ${saved

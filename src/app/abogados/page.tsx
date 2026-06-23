@@ -80,6 +80,7 @@ function LawyersContent() {
 
   const [lawyers, setLawyers] = useState<Lawyer[]>([])
   const [dbLoading, setDbLoading] = useState(true)
+  const [isPro, setIsPro] = useState(false)
 
   const [query, setQuery]               = useState(searchParams.get('q') ?? '')
   const [category, setCategory]         = useState(searchParams.get('categoria') ?? 'todos')
@@ -89,6 +90,18 @@ function LawyersContent() {
   const [showFilters, setShowFilters]   = useState(false)
   const [onlyVerified, setOnlyVerified] = useState(false)
   const [onlyAccepting, setOnlyAccepting] = useState(false)
+
+  // ── Detectar rol ──
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('role').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (data?.role === 'lawyer' || data?.role === 'firm_admin') setIsPro(true)
+        })
+    })
+  }, [])
 
   // ── Cargar abogados desde Supabase ──
   useEffect(() => {
@@ -184,17 +197,17 @@ function LawyersContent() {
     if (onlyAccepting) list = list.filter(l => l.accepts)
 
     list.sort((a, b) => {
+      // Plan/featured es siempre prioritario
+      const score = (l: Lawyer) =>
+        (l.plan === 'premium' ? 2 : l.plan === 'professional' ? 1 : 0) + (l.is_featured ? 1 : 0)
+      const planDiff = score(b) - score(a)
+      if (planDiff !== 0) return planDiff
+      // Dentro del mismo nivel, ordenar por preferencia del usuario
       if (sort === 'rating')        return b.rating - a.rating
-      if (sort === 'response_time') return a.response_time - b.response_time
+      if (sort === 'response_time') return (a.response_time || 999) - (b.response_time || 999)
       if (sort === 'cases')         return b.cases - a.cases
       if (sort === 'reviews')       return b.reviews - a.reviews
       return 0
-    })
-
-    list.sort((a, b) => {
-      const score = (l: Lawyer) =>
-        (l.plan === 'premium' ? 2 : l.plan === 'professional' ? 1 : 0) + (l.is_featured ? 1 : 0)
-      return score(b) - score(a)
     })
 
     return list
@@ -218,7 +231,9 @@ function LawyersContent() {
         {/* ── Top bar ── */}
         <div className="bg-white border-b border-slate-200 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-6">Abogados en Argentina</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-6">
+              {isPro ? 'Casos en Argentina' : 'Abogados en Argentina'}
+            </h1>
 
             <form onSubmit={e => { e.preventDefault(); setPage(1) }} className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 flex items-center gap-3 h-11 rounded-lg border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
@@ -227,7 +242,7 @@ function LawyersContent() {
                   type="text"
                   value={query}
                   onChange={e => { setQuery(e.target.value); setPage(1) }}
-                  placeholder="Buscar por nombre, especialidad o ciudad..."
+                  placeholder={isPro ? 'Buscar por especialidad...' : 'Buscar por nombre, especialidad o ciudad...'}
                   className="flex-1 text-sm outline-none placeholder:text-slate-400"
                 />
                 {query && (
@@ -312,16 +327,18 @@ function LawyersContent() {
                     : <><span className="font-semibold text-slate-900">{filtered.length}</span> abogado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</>
                   }
                 </p>
-                <select
-                  value={sort}
-                  onChange={e => { setSort(e.target.value as SortKey); setPage(1) }}
-                  className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-white text-slate-600"
-                >
-                  <option value="rating">Mejor valorados</option>
-                  <option value="response_time">Menor tiempo de respuesta</option>
-                  <option value="cases">Más casos</option>
-                  <option value="reviews">Más valoraciones</option>
-                </select>
+                {!isPro && (
+                  <select
+                    value={sort}
+                    onChange={e => { setSort(e.target.value as SortKey); setPage(1) }}
+                    className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-white text-slate-600"
+                  >
+                    <option value="rating">Mejor valorados</option>
+                    <option value="response_time">Menor tiempo de respuesta</option>
+                    <option value="cases">Más casos</option>
+                    <option value="reviews">Más valoraciones</option>
+                  </select>
+                )}
               </div>
 
               {filtered.length === 0 ? (

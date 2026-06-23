@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { publishCase } from './actions'
 
@@ -37,7 +36,6 @@ const URGENCIES = [
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
 export default function NewCasePage() {
-  const router = useRouter()
   const [title, setTitle]           = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory]     = useState('')

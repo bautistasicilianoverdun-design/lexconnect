@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   FileText, MessageSquare, Star, Clock, ChevronRight,
-  TrendingUp, Plus, Eye, AlertCircle,
+  TrendingUp, Plus, AlertCircle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
@@ -33,6 +33,9 @@ export default async function DashboardHome() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/iniciar-sesion')
 
+  const { data: profileData } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const isLawyer = profileData?.role === 'lawyer' || profileData?.role === 'firm_admin'
+
   const [
     { count: casesCount },
     { count: proposalsCount },
@@ -53,10 +56,9 @@ export default async function DashboardHome() {
       .from('client_favorites')
       .select('*', { count: 'exact', head: true })
       .eq('client_id', user.id),
-    supabase
-      .from('conversations')
-      .select('client_unread')
-      .eq('client_id', user.id),
+    isLawyer
+      ? supabase.from('conversations').select('lawyer_unread').eq('lawyer_id', user.id)
+      : supabase.from('conversations').select('client_unread').eq('client_id', user.id),
     supabase
       .from('legal_cases')
       .select('id, title, status, proposals_count, created_at, legal_categories(name)')
@@ -65,7 +67,9 @@ export default async function DashboardHome() {
       .limit(3),
   ])
 
-  const unreadMessages = conversations?.reduce((sum, c) => sum + (c.client_unread ?? 0), 0) ?? 0
+  const unreadMessages = isLawyer
+    ? (conversations as { lawyer_unread: number | null }[] | null)?.reduce((sum, c) => sum + (c.lawyer_unread ?? 0), 0) ?? 0
+    : (conversations as { client_unread: number | null }[] | null)?.reduce((sum, c) => sum + (c.client_unread ?? 0), 0) ?? 0
   const newProposals = (proposalsCount ?? 0)
 
   return (
@@ -78,11 +82,12 @@ export default async function DashboardHome() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Casos activos', value: casesCount ?? 0, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Propuestas recibidas', value: newProposals, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Mensajes no leídos', value: unreadMessages, icon: MessageSquare, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Abogados favoritos', value: favoritesCount ?? 0, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
+          { label: 'Casos activos', value: casesCount ?? 0, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', lawyerHide: true },
+          { label: 'Propuestas recibidas', value: newProposals, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50', lawyerHide: true },
+          { label: 'Mensajes no leídos', value: unreadMessages, icon: MessageSquare, color: 'text-orange-600', bg: 'bg-orange-50', lawyerHide: false },
+          { label: 'Abogados favoritos', value: favoritesCount ?? 0, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50', lawyerHide: true },
+        ].filter(({ lawyerHide }) => !(isLawyer && lawyerHide))
+         .map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-5">
             <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${bg} mb-3`}>
               <Icon className={`h-5 w-5 ${color}`} />
@@ -110,8 +115,8 @@ export default async function DashboardHome() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent cases */}
-        <div className="bg-white rounded-2xl border border-slate-200">
+        {/* Recent cases — solo clientes */}
+        {!isLawyer && <div className="bg-white rounded-2xl border border-slate-200">
           <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900">Mis casos</h2>
             <div className="flex gap-3">
@@ -142,7 +147,7 @@ export default async function DashboardHome() {
                         </span>
                         {cat && <span className="text-xs text-slate-400">{cat.name}</span>}
                         <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> {c.proposals_count}
+                          <MessageSquare className="h-3 w-3" /> {c.proposals_count}
                         </span>
                         <span className="text-xs text-slate-400 flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {timeAgo(c.created_at)}
@@ -170,7 +175,7 @@ export default async function DashboardHome() {
               <Plus className="h-4 w-4" /> Publicar nuevo caso
             </Link>
           </div>
-        </div>
+        </div>}
 
         {/* Quick links */}
         <div className="space-y-4">
@@ -181,6 +186,7 @@ export default async function DashboardHome() {
               desc: 'Revisá las propuestas de abogados para tus casos',
               icon: TrendingUp,
               color: 'bg-purple-50 text-purple-600',
+              lawyerHide: false,
             },
             {
               href: '/dashboard/mensajes',
@@ -188,6 +194,7 @@ export default async function DashboardHome() {
               desc: unreadMessages > 0 ? `Tenés ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
               icon: MessageSquare,
               color: 'bg-orange-50 text-orange-600',
+              lawyerHide: false,
             },
             {
               href: '/dashboard/favoritos',
@@ -195,6 +202,7 @@ export default async function DashboardHome() {
               desc: `${favoritesCount ?? 0} abogados guardados`,
               icon: Star,
               color: 'bg-amber-50 text-amber-600',
+              lawyerHide: true,
             },
             {
               href: '/abogados',
@@ -202,8 +210,10 @@ export default async function DashboardHome() {
               desc: 'Encontrá el profesional ideal para tu caso',
               icon: FileText,
               color: 'bg-blue-50 text-blue-600',
+              lawyerHide: true,
             },
-          ].map(({ href, label, desc, icon: Icon, color }) => (
+          ].filter(({ lawyerHide }) => !(isLawyer && lawyerHide))
+           .map(({ href, label, desc, icon: Icon, color }) => (
             <Link
               key={href}
               href={href}
@@ -222,8 +232,8 @@ export default async function DashboardHome() {
         </div>
       </div>
 
-      {/* Upgrade CTA */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
+      {/* Upgrade CTA — solo para clientes */}
+      {!isLawyer && <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 text-white text-center sm:text-left">
           <p className="font-bold text-base">Actualizá a Plan Profesional</p>
           <p className="text-blue-100 text-sm mt-1">Publicá casos ilimitados, chat prioritario y acceso a la IA de clasificación.</p>
@@ -234,7 +244,7 @@ export default async function DashboardHome() {
         >
           Ver planes <ChevronRight className="h-4 w-4" />
         </Link>
-      </div>
+      </div>}
     </div>
   )
 }
