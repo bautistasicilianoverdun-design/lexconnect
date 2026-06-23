@@ -22,6 +22,8 @@ export async function deleteAccount(): Promise<{ success: boolean; error?: strin
   const { error: adminError } = await adminClient.auth.admin.deleteUser(user.id)
   if (adminError) return { success: false, error: adminError.message }
 
-  await supabase.auth.signOut()
+  // Sign out server-side (clears cookie). Ignore errors — user is already deleted.
+  try { await supabase.auth.signOut() } catch {}
+
   return { success: true }
 }

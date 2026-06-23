@@ -30,7 +30,9 @@ export default function ConfiguracionPage() {
       if (!result.success) {
         setDeleteError(result.error ?? 'Error al eliminar la cuenta. Intentá de nuevo.')
       } else {
-        window.location.href = '/?cuenta=eliminada'
+        // Limpiar sesión del cliente antes de redirigir al inicio
+        try { await createClient().auth.signOut() } catch {}
+        window.location.href = '/'
       }
     })
   }
