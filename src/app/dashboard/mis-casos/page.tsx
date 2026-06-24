@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { startConversation, acceptProposal, rejectProposal } from './actions'
+import { CaseDocumentsSection } from '@/components/dashboard/case-documents-section'
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
@@ -230,9 +231,11 @@ export default async function MisCasosPage() {
                 </div>
               )}
 
+              <CaseDocumentsSection caseId={c.id} currentUserId={user.id} />
+
               <div className="px-6 pb-5 pt-2 border-t border-slate-100 flex justify-end">
                 <Link href={`/casos/${c.id}`} className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-                  Ver caso público <ChevronRight className="h-3.5 w-3.5" />
+                  Ver caso publico <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>

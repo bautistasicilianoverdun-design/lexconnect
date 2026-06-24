@@ -7,6 +7,7 @@ import {
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { createClient } from '@/lib/supabase/server'
+import { CaseDocumentsSection } from '@/components/dashboard/case-documents-section'
 
 const URGENCY_STYLES: Record<string, string> = {
   urgent: 'bg-red-100 text-red-700',
@@ -74,6 +75,7 @@ export default async function CasoDetailPage({
   // User roles
   const isOwner  = user?.id === caso.client_id
   let isLawyer   = false
+  let isAcceptedLawyer = false
   if (user && !isOwner) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -81,7 +83,26 @@ export default async function CasoDetailPage({
       .eq('id', user.id)
       .single()
     isLawyer = profile?.role === 'lawyer' || profile?.role === 'firm_admin'
+    if (isLawyer) {
+      const { data: lp } = await supabase
+        .from('lawyer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      if (lp) {
+        const { data: accepted } = await supabase
+          .from('case_proposals')
+          .select('id')
+          .eq('case_id', caso.id)
+          .eq('lawyer_id', lp.id)
+          .eq('status', 'accepted')
+          .maybeSingle()
+        isAcceptedLawyer = !!accepted
+      }
+    }
   }
+
+  const canSeeDocuments = isOwner || isAcceptedLawyer
 
   const cat  = (Array.isArray(caso.legal_categories) ? caso.legal_categories[0] : caso.legal_categories) as { name: string; slug: string } | null
   const prov = (Array.isArray(caso.provinces) ? caso.provinces[0] : caso.provinces) as { name: string } | null
@@ -207,6 +228,13 @@ export default async function CasoDetailPage({
                   </p>
                 </div>
               </div>
+
+              {/* Documents */}
+              {canSeeDocuments && user && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <CaseDocumentsSection caseId={caso.id} currentUserId={user.id} />
+                </div>
+              )}
 
               {/* CTA block */}
               {isOwner ? (
@@ -348,14 +376,14 @@ export default async function CasoDetailPage({
                   >
                     Ver todos los abogados <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
-                </div>
-              )}
+              </div>
+            )}
 
               {/* Post case CTA */}
               {!isLawyer && !isOwner && (
                 <div className="bg-blue-600 rounded-2xl p-5 text-center text-white">
                   <FileText className="h-8 w-8 mx-auto mb-3 opacity-80" />
-                  <p className="font-bold text-sm mb-1">¿Tenés un caso similar?</p>
+                  <p className="font-bold text-sm mb-1">Tenes un caso similar?</p>
                   <p className="text-blue-100 text-xs mb-4">Publicalo gratis y recibí propuestas en horas.</p>
                   <Link
                     href="/casos/nuevo"
@@ -371,5 +399,8 @@ export default async function CasoDetailPage({
       </main>
       <Footer />
     </div>
+  )
+}
+
   )
 }
