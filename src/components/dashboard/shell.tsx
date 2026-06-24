@@ -21,6 +21,7 @@ const LAWYER_NAV = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/casos-disponibles', label: 'Casos disponibles', icon: Search },
   { href: '/dashboard/mis-propuestas', label: 'Mis propuestas', icon: Briefcase },
+  { href: '/dashboard/mis-articulos', label: 'Mis artículos', icon: BookOpen },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
   { href: '/dashboard/estadisticas', label: 'Estadísticas', icon: BarChart2 },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },

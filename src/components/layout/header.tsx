@@ -84,6 +84,7 @@ export function Header({ user: userProp }: HeaderProps) {
             </NavLink>
             <NavLink href="/estudios">Estudios</NavLink>
             <NavLink href="/casos">Casos</NavLink>
+            <NavLink href="/blog">Blog</NavLink>
             <NavLink href="/como-funciona">Cómo funciona</NavLink>
             {(!user || user.role === 'lawyer' || user.role === 'firm_admin') && (
               <NavLink href="/precios">Precios</NavLink>
