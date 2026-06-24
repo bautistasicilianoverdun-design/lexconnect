@@ -23,6 +23,11 @@ export default async function NuevoArticuloPage() {
     .eq('is_active', true)
     .order('sort_order')
 
+  async function handleCreate(formData: FormData): Promise<void> {
+    'use server'
+    await createArticle(formData)
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
@@ -35,7 +40,7 @@ export default async function NuevoArticuloPage() {
         </div>
       </div>
 
-      <form action={createArticle} className="space-y-5">
+      <form action={handleCreate} className="space-y-5">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
