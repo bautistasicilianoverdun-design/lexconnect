@@ -400,7 +400,3 @@ export default async function CasoDetailPage({
       <Footer />
     </div>
   )
-}
-
-  )
-}
