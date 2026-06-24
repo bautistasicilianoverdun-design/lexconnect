@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { BookOpen, Plus, Eye, Clock, Edit, Globe, FileText } from 'lucide-react'
-import { publishArticle, deleteArticle } from './actions'
+import { publishArticle } from './actions'
+import { DeleteArticleButton } from './delete-button'
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
@@ -137,15 +138,7 @@ export default async function MisArticulosPage() {
                         </button>
                       </form>
                     )}
-                    <form action={deleteArticle.bind(null, article.id)}>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-red-200 hover:bg-red-50 text-red-500 text-xs font-medium rounded-lg transition-colors"
-                        onClick={(e) => { if (!confirm('Eliminar este articulo?')) e.preventDefault() }}
-                      >
-                        Eliminar
-                      </button>
-                    </form>
+                    <DeleteArticleButton articleId={article.id} />
                   </div>
                 </div>
               </div>
