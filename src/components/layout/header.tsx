@@ -33,7 +33,6 @@ export function Header({ user: userProp }: HeaderProps) {
 
     async function loadUser(session: { user: { id: string; email?: string } } | null) {
       if (!session) { setSessionUser(null); return }
-      // Show nav link immediately with fallback, then enrich with profile
       setSessionUser({ full_name: session.user.email ?? 'Usuario', role: 'client', avatar_url: null })
       const { data } = await supabase
         .from('profiles')
@@ -80,12 +79,12 @@ export function Header({ user: userProp }: HeaderProps) {
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-1">
             <NavLink href="/abogados">
-              {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Búsqueda' : 'Abogados'}
+              {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Busqueda' : 'Abogados'}
             </NavLink>
             <NavLink href="/estudios">Estudios</NavLink>
             <NavLink href="/casos">Casos</NavLink>
             <NavLink href="/blog">Blog</NavLink>
-            <NavLink href="/como-funciona">Cómo funciona</NavLink>
+            <NavLink href="/como-funciona">Como funciona</NavLink>
             {(!user || user.role === 'lawyer' || user.role === 'firm_admin') && (
               <NavLink href="/precios">Precios</NavLink>
             )}
@@ -129,13 +128,13 @@ export function Header({ user: userProp }: HeaderProps) {
                       {user.role === 'client' && (
                         <UserMenuItem href="/dashboard/mis-casos">Mis Casos</UserMenuItem>
                       )}
-                      <UserMenuItem href="/dashboard/configuracion">Configuración</UserMenuItem>
+                      <UserMenuItem href="/dashboard/configuracion">Configuracion</UserMenuItem>
                       <div className="border-t border-border mt-1 pt-1">
                         <button
                           onClick={handleLogout}
                           className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
                         >
-                          Cerrar sesión
+                          Cerrar sesion
                         </button>
                       </div>
                     </div>
@@ -145,7 +144,7 @@ export function Header({ user: userProp }: HeaderProps) {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-                  <Link href="/iniciar-sesion">Iniciar sesión</Link>
+                  <Link href="/iniciar-sesion">Iniciar sesion</Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link href="/registro">Registrarse</Link>
@@ -166,11 +165,11 @@ export function Header({ user: userProp }: HeaderProps) {
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
           <MobileNavLink href="/abogados" onClick={() => setMobileOpen(false)}>
-            {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Búsqueda' : 'Abogados'}
+            {user?.role === 'lawyer' || user?.role === 'firm_admin' ? 'Busqueda' : 'Abogados'}
           </MobileNavLink>
           <MobileNavLink href="/estudios" onClick={() => setMobileOpen(false)}>Estudios</MobileNavLink>
           <MobileNavLink href="/casos" onClick={() => setMobileOpen(false)}>Casos</MobileNavLink>
-          <MobileNavLink href="/como-funciona" onClick={() => setMobileOpen(false)}>Cómo funciona</MobileNavLink>
+          <MobileNavLink href="/como-funciona" onClick={() => setMobileOpen(false)}>Como funciona</MobileNavLink>
           {(!user || user.role === 'lawyer' || user.role === 'firm_admin') && (
             <MobileNavLink href="/precios" onClick={() => setMobileOpen(false)}>Precios</MobileNavLink>
           )}
@@ -180,7 +179,7 @@ export function Header({ user: userProp }: HeaderProps) {
           {!user && (
             <div className="flex gap-2 pt-2 border-t border-border">
               <Button variant="outline" className="flex-1" asChild>
-                <Link href="/iniciar-sesion">Iniciar sesión</Link>
+                <Link href="/iniciar-sesion">Iniciar sesion</Link>
               </Button>
               <Button className="flex-1" asChild>
                 <Link href="/registro">Registrarse</Link>
