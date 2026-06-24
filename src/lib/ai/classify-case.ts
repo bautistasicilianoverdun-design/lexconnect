@@ -1,7 +1,5 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
 const VALID_CATEGORIES = [
   'laboral', 'civil', 'penal', 'comercial', 'societario',
   'familia', 'inmobiliario', 'tributario', 'consumidor', 'transito',
@@ -20,6 +18,8 @@ export async function classifyCase(params: {
   description: string
   urgency: string
 }): Promise<CaseClassification | null> {
+  if (!process.env.OPENAI_API_KEY) return null
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
