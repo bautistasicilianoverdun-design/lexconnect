@@ -24,7 +24,7 @@ export async function sendProposal({
 
   if (error) return { error: error.message }
 
-  // Notificar al cliente dueño del caso
+  // Notificar al cliente
   const { data: caseData } = await supabase
     .from('legal_cases')
     .select('title, client_id')
@@ -39,11 +39,20 @@ export async function sendProposal({
 
   const profiles = lawyerData?.profiles
   const lawyerName =
-    (Array.isArray(profiles) ? profiles[0]?.full_name : (profiles as { full_name: string } | null | undefined)?.full_name) ?? 'Un abogado'
+    (Array.isArray(profiles)
+      ? profiles[0]?.full_name
+      : (profiles as { full_name: string } | null | undefined)?.full_name) ??
+    'Un abogado'
 
   if (caseData?.client_id) {
     await createNotification({
       userId: caseData.client_id,
       type: 'proposal',
       title: 'Nueva propuesta recibida',
-      body: `${lawyerName} envió una propuesta para tu caso: "${c
+      body: lawyerName + ' envio una propuesta para tu caso: "' + caseData.title + '"',
+      link: '/dashboard/mis-casos',
+    })
+  }
+
+  return { error: null }
+}
