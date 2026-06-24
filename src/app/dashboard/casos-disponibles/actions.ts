@@ -37,18 +37,13 @@ export async function sendProposal({
     .eq('id', lawyerProfileId)
     .single()
 
+  const profiles = lawyerData?.profiles
   const lawyerName =
-    (lawyerData?.profiles as { full_name: string } | null)?.full_name ?? 'Un abogado'
+    (Array.isArray(profiles) ? profiles[0]?.full_name : (profiles as { full_name: string } | null | undefined)?.full_name) ?? 'Un abogado'
 
   if (caseData?.client_id) {
     await createNotification({
       userId: caseData.client_id,
       type: 'proposal',
       title: 'Nueva propuesta recibida',
-      body: `${lawyerName} envió una propuesta para tu caso: "${caseData.title}"`,
-      link: '/dashboard/mis-casos',
-    })
-  }
-
-  return { error: null }
-}
+      body: `${lawyerName} envió una propuesta para tu caso: "${c
