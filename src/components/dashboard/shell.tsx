@@ -3,10 +3,11 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, FileText, MessageSquare, User,
-  Search, Star, Bell, LogOut, Settings,
+  Search, Star, LogOut, Settings,
   Briefcase, BarChart2, BookOpen,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 const CLIENT_NAV = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard, exact: true },
@@ -147,9 +148,7 @@ export default function DashboardShell({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
-              <Bell className="h-4 w-4 text-slate-500" />
-            </button>
+            <NotificationBell />
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-sm">
               {avatar}
             </div>

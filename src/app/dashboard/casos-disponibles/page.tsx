@@ -6,6 +6,7 @@ import {
   CheckCircle2, ChevronRight, Send, SlidersHorizontal,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { sendProposal } from './actions'
 
 const CATEGORIES = [
   { slug: 'todos', name: 'Todos' },
@@ -69,30 +70,36 @@ export default function CasosDisponiblesPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
 
-      // Get lawyer profile id
-      const { data: lp } = await supabase
-        .from('lawyer_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-      const lpId = lp?.id ?? null
-      setLawyerProfileId(lpId)
-
-      // Get open public cases with category and province
-      const { data: rawCases } = await supabase
+      // Load public cases first — no auth required (RLS allows visibility='public' for everyone)
+      const { data: rawCases, error: casesError } = await supabase
         .from('legal_cases')
         .select(`
           id, title, description, urgency, views_count, proposals_count, created_at,
-          legal_categories(name, slug),
+          legal_categories!category_id(name, slug),
           provinces(name)
         `)
         .eq('status', 'open')
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
         .limit(50)
+
+      if (casesError) {
+        console.error('casos-disponibles query error:', casesError)
+      }
+
+      // Get lawyer profile (optional — only needed for "already proposed" markers)
+      let lpId: string | null = null
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: lp } = await supabase
+          .from('lawyer_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        lpId = lp?.id ?? null
+        setLawyerProfileId(lpId)
+      }
 
       // If lawyer, check which cases they already proposed to
       let proposedIds: Set<string> = new Set()
@@ -148,17 +155,14 @@ export default function CasosDisponiblesPage() {
     return list
   }, [cases, query, category])
 
-  async function sendProposal(caseId: string) {
+  async function handleSendProposal(caseId: string) {
     if (!proposalText.trim() || !lawyerProfileId) return
     setSendingId(caseId)
     setProposalError('')
-    const supabase = createClient()
-    const { error } = await supabase.from('case_proposals').insert({
-      case_id: caseId,
-      lawyer_id: lawyerProfileId,
+    const { error } = await sendProposal({
+      caseId,
+      lawyerProfileId,
       message: proposalText.trim(),
-      fee_type: 'to_discuss',
-      status: 'pending',
     })
     if (error) {
       setProposalError('No se pudo enviar la propuesta. Intentá de nuevo.')
@@ -189,6 +193,7 @@ export default function CasosDisponiblesPage() {
         <h1 className="text-2xl font-bold text-slate-900">Casos disponibles</h1>
         <p className="text-sm text-slate-500 mt-0.5">Casos publicados por clientes que buscan asesoramiento</p>
       </div>
+
 
       <div className="flex gap-3">
         <div className="flex-1 flex items-center gap-2 h-10 rounded-xl border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
@@ -317,7 +322,7 @@ export default function CasosDisponiblesPage() {
                 Cancelar
               </button>
               <button
-                onClick={() => sendProposal(showModal)}
+                onClick={() => handleSendProposal(showModal)}
                 disabled={!proposalText.trim() || sendingId === showModal}
                 className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >

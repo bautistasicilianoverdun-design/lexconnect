@@ -54,7 +54,7 @@ export default async function PerfilPage() {
       .single(),
     supabase
       .from('legal_cases')
-      .select('id, title, status, proposals_count, views_count, created_at, legal_categories(name), provinces(name)', { count: 'exact' })
+      .select('id, title, status, proposals_count, views_count, created_at, legal_categories!category_id(name), provinces!province_id(name)', { count: 'exact' })
       .eq('client_id', user.id)
       .order('created_at', { ascending: false }),
     supabase

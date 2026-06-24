@@ -115,7 +115,7 @@ function LawyersContent() {
           id, slug, plan, is_featured, rating_avg, rating_count,
           cases_handled, response_time_hours, accepts_new_clients,
           verification_status,
-          profiles(full_name, avatar_url, city, bio, provinces(name)),
+          profiles!user_id(full_name, avatar_url, city, bio, provinces(name)),
           lawyer_specialties(is_primary, legal_categories(slug, name))
         `)
         .order('is_featured', { ascending: false })
@@ -239,7 +239,9 @@ function LawyersContent() {
 
             <form onSubmit={e => { e.preventDefault(); setPage(1) }} className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 flex items-center gap-3 h-11 rounded-lg border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                <button type="submit" className="shrink-0 hover:text-blue-600 transition-colors">
+                  <Search className="h-4 w-4 text-slate-400 hover:text-blue-600" />
+                </button>
                 <input
                   type="text"
                   value={query}
@@ -323,12 +325,14 @@ function LawyersContent() {
           ) : (
             <>
               <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-slate-500">
-                  {filtered.length === 0
-                    ? 'Sin resultados para esa búsqueda'
-                    : <><span className="font-semibold text-slate-900">{filtered.length}</span> abogado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</>
-                  }
-                </p>
+                {filtered.length > 0 && (
+                  <p className="text-sm text-slate-500">
+                    <span className="font-semibold text-slate-900">{filtered.length}</span> abogado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+                {filtered.length === 0 && hasActiveFilters && (
+                  <p className="text-sm text-slate-500">Sin resultados para esa búsqueda</p>
+                )}
                 {roleLoaded && !isPro && (
                   <select
                     value={sort}
@@ -346,10 +350,14 @@ function LawyersContent() {
               {filtered.length === 0 ? (
                 <div className="text-center py-20">
                   <Search className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                  <h3 className="font-semibold text-slate-900 mb-2">No encontramos abogados</h3>
+                  <h3 className="font-semibold text-slate-900 mb-2">
+                    {isPro ? 'No encontramos casos' : 'No encontramos abogados'}
+                  </h3>
                   <p className="text-sm text-slate-500 mb-5">
                     {lawyers.length === 0
-                      ? 'Todavía no hay abogados registrados en la plataforma.'
+                      ? isPro
+                        ? 'Todavía no hay casos registrados en la plataforma.'
+                        : 'Todavía no hay abogados registrados en la plataforma.'
                       : 'Probá con otra especialidad, provincia o término de búsqueda.'}
                   </p>
                   {lawyers.length > 0 && (

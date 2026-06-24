@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Send, Search, Phone, Video, MoreVertical, CheckCheck, Check, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -49,9 +50,11 @@ function avatarColor(id: string) {
 }
 
 export default function MensajesPage() {
+  const searchParams = useSearchParams()
+  const convParam = searchParams.get('conv')
   const [userId, setUserId] = useState<string | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(convParam)
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [search, setSearch] = useState('')
@@ -95,8 +98,39 @@ export default function MensajesPage() {
         }
       })
 
-      setConversations(convs)
-      if (convs.length > 0) setActiveId(convs[0].id)
+      // If a specific conv was requested and it's not in the list
+      // (e.g. brand-new conversation with no messages), fetch it separately
+      let finalConvs = convs
+      if (convParam && !convs.find((c) => c.id === convParam)) {
+        const { data: single } = await supabase
+          .from('conversations')
+          .select(`
+            id, last_message_at, client_unread, lawyer_unread, is_archived,
+            client:profiles!client_id(id, full_name),
+            lawyer:profiles!lawyer_id(id, full_name),
+            legal_cases(title)
+          `)
+          .eq('id', convParam)
+          .single()
+
+        if (single) {
+          const isClient = (single as any).client?.id === user.id
+          const otherPerson: Profile = isClient ? (single as any).lawyer : (single as any).client
+          const newConv: Conversation = {
+            id: single.id,
+            otherPerson: otherPerson ?? { id: '', full_name: 'Usuario' },
+            caseTitle: (single as any).legal_cases?.title ?? null,
+            lastMessageAt: single.last_message_at,
+            unreadCount: isClient ? (single.client_unread ?? 0) : (single.lawyer_unread ?? 0),
+            otherUnread: isClient ? (single.lawyer_unread ?? 0) : (single.client_unread ?? 0),
+            isClient,
+          }
+          finalConvs = [newConv, ...convs]
+        }
+      }
+
+      setConversations(finalConvs)
+      if (!convParam && finalConvs.length > 0) setActiveId(finalConvs[0].id)
       setLoadingConvs(false)
     }
     init()
@@ -242,6 +276,19 @@ export default function MensajesPage() {
       setConversations((prev) =>
         prev.map((c) => c.id === activeId ? { ...c, otherUnread: newOtherUnread } : c)
       )
+
+      // Notificar al destinatario
+      const otherUserId = conv?.otherPerson.id
+      if (otherUserId) {
+        await supabase.from('notifications').insert({
+          user_id: otherUserId,
+          type: 'message',
+          title: 'Nuevo mensaje',
+          body: trimmed.length > 60 ? trimmed.slice(0, 60) + '…' : trimmed,
+          link: `/dashboard/mensajes?conv=${activeId}`,
+          is_read: false,
+        })
+      }
     }
 
     setSending(false)

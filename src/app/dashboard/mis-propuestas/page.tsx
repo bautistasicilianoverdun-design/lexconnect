@@ -37,8 +37,8 @@ export default async function MisPropuestasPage() {
       id, message, status, created_at,
       legal_cases!case_id(
         id, title, status,
-        legal_categories(name),
-        provinces(name)
+        legal_categories!category_id(name),
+        provinces!province_id(name)
       )
     `)
     .eq('lawyer_id', lp.id)

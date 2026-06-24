@@ -12,9 +12,12 @@ export async function POST(request: Request) {
   const { title, description, category, province, urgency, visibility } = await request.json()
 
   const [{ data: cat }, { data: prov }] = await Promise.all([
-    supabase.from('legal_categories').select('id').eq('slug', category).single(),
-    supabase.from('provinces').select('id').eq('name', province).single(),
+    supabase.from('legal_categories').select('id').eq('slug', category).maybeSingle(),
+    supabase.from('provinces').select('id').eq('name', province).maybeSingle(),
   ])
+
+  if (category && !cat) return NextResponse.json({ error: 'Categoría no válida' }, { status: 400 })
+  if (province && !prov) return NextResponse.json({ error: 'Provincia no válida' }, { status: 400 })
 
   const { error } = await supabase.from('legal_cases').insert({
     client_id: user.id,

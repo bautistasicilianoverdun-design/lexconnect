@@ -148,11 +148,9 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   let isLawyer = false
-  let isPro = false
   if (user) {
     const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     isLawyer = data?.role === 'lawyer' || data?.role === 'firm_admin'
-    isPro = data?.role === 'lawyer' || data?.role === 'firm_admin'
   }
 
   return (
@@ -383,7 +381,7 @@ export default async function HomePage() {
                   Perfil gratuito. Sin comisiones ocultas.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  {!isPro && (
+                  {!isLawyer && (
                     <Link
                       href="/registro?rol=abogado"
                       className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"

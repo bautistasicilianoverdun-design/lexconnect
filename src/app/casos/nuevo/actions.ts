@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { classifyCase } from '@/lib/ai/classify-case'
 
 type PublishResult =
   | { success: true }
@@ -45,18 +46,48 @@ export async function publishCase(payload: {
     supabase.from('provinces').select('id').eq('name', payload.province).maybeSingle(),
   ])
 
-  const { error } = await supabase.from('legal_cases').insert({
-    client_id:   user.id,
-    title:       payload.title.trim(),
-    description: payload.description.trim(),
-    category_id: cat?.id ?? null,
-    province_id: prov?.id ?? null,
-    urgency:     payload.urgency,
-    visibility:  payload.visibility,
-    status:      'open',
-  })
+  const { data: inserted, error } = await supabase
+    .from('legal_cases')
+    .insert({
+      client_id:   user.id,
+      title:       payload.title.trim(),
+      description: payload.description.trim(),
+      category_id: cat?.id ?? null,
+      province_id: prov?.id ?? null,
+      urgency:     payload.urgency,
+      visibility:  payload.visibility,
+      status:      'open',
+    })
+    .select('id')
+    .single()
 
   if (error) return { success: false, error: error.message }
+
+  // AI classification — runs after insert, failure doesn't block publish
+  if (inserted?.id && process.env.OPENAI_API_KEY) {
+    const classification = await classifyCase({
+      title:       payload.title.trim(),
+      description: payload.description.trim(),
+      urgency:     payload.urgency,
+    })
+
+    if (classification) {
+      const { data: aiCat } = await supabase
+        .from('legal_categories')
+        .select('id')
+        .eq('slug', classification.category_slug)
+        .maybeSingle()
+
+      await supabase
+        .from('legal_cases')
+        .update({
+          ai_category_id: aiCat?.id ?? null,
+          ai_urgency:     classification.urgency,
+          ai_summary:     classification.summary,
+        })
+        .eq('id', inserted.id)
+    }
+  }
 
   return { success: true }
 }

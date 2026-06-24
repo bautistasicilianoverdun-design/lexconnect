@@ -1,12 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, Scale, ChevronDown, Bell, MessageSquare, Search } from 'lucide-react'
+import { Menu, X, Scale, ChevronDown, MessageSquare } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 type UserData = {
   full_name: string
@@ -95,20 +96,11 @@ export function Header({ user: userProp }: HeaderProps) {
             {user ? (
               <>
                 <Button variant="ghost" size="icon" asChild>
-                  <Link href="/buscar">
-                    <Search className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="icon" asChild>
                   <Link href="/dashboard/mensajes">
                     <MessageSquare className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href="/notificaciones">
-                    <Bell className="h-4 w-4" />
-                  </Link>
-                </Button>
+                <NotificationBell />
                 <div className="relative">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}

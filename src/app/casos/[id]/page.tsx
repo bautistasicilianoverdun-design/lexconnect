@@ -60,7 +60,8 @@ export default async function CasoDetailPage({
       id, title, description, urgency, status, visibility,
       views_count, proposals_count, created_at,
       client_id, category_id, budget_min, budget_max,
-      legal_categories(name, slug),
+      ai_summary, ai_urgency,
+      legal_categories!category_id(name, slug),
       provinces(name)
     `)
     .eq('id', id)
@@ -101,7 +102,7 @@ export default async function CasoDetailPage({
     if (ids.length > 0) {
       const { data: lps } = await supabase
         .from('lawyer_profiles')
-        .select('id, rating_avg, rating_count, verification_status, profiles(full_name, city, avatar_url)')
+        .select('id, rating_avg, rating_count, verification_status, profiles!user_id(full_name, city, avatar_url)')
         .in('id', ids)
         .neq('accepts_new_clients', false)
         .order('rating_avg', { ascending: false })
@@ -114,7 +115,7 @@ export default async function CasoDetailPage({
   if (relatedLawyers.length === 0) {
     const { data: lps } = await supabase
       .from('lawyer_profiles')
-      .select('id, rating_avg, rating_count, verification_status, profiles(full_name, city, avatar_url)')
+      .select('id, rating_avg, rating_count, verification_status, profiles!user_id(full_name, city, avatar_url)')
       .eq('accepts_new_clients', true)
       .order('rating_avg', { ascending: false })
       .limit(3)
@@ -183,6 +184,19 @@ export default async function CasoDetailPage({
                 )}
               </div>
 
+              {/* AI summary */}
+              {caso.ai_summary && (
+                <div className="flex items-start gap-3 bg-violet-50 border border-violet-100 rounded-xl p-4">
+                  <svg className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                  <div>
+                    <p className="text-xs font-semibold text-violet-700 mb-1">Análisis IA</p>
+                    <p className="text-sm text-violet-900 leading-relaxed">{caso.ai_summary}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Privacy notice */}
               <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <Shield className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
@@ -202,7 +216,7 @@ export default async function CasoDetailPage({
                     Revisá las propuestas que recibiste y elegí al abogado que mejor se adapte a tu situación.
                   </p>
                   <Link
-                    href="/dashboard/mis-casos"
+                    href={`/dashboard/mis-casos#${caso.id}`}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
                   >
                     Ver propuestas recibidas <ChevronRight className="h-4 w-4" />
@@ -338,17 +352,19 @@ export default async function CasoDetailPage({
               )}
 
               {/* Post case CTA */}
-              <div className="bg-blue-600 rounded-2xl p-5 text-center text-white">
-                <FileText className="h-8 w-8 mx-auto mb-3 opacity-80" />
-                <p className="font-bold text-sm mb-1">¿Tenés un caso similar?</p>
-                <p className="text-blue-100 text-xs mb-4">Publicalo gratis y recibí propuestas en horas.</p>
-                <Link
-                  href="/casos/nuevo"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-blue-600 font-bold rounded-xl text-xs hover:bg-blue-50 transition-colors"
-                >
-                  Publicar mi caso
-                </Link>
-              </div>
+              {!isLawyer && !isOwner && (
+                <div className="bg-blue-600 rounded-2xl p-5 text-center text-white">
+                  <FileText className="h-8 w-8 mx-auto mb-3 opacity-80" />
+                  <p className="font-bold text-sm mb-1">¿Tenés un caso similar?</p>
+                  <p className="text-blue-100 text-xs mb-4">Publicalo gratis y recibí propuestas en horas.</p>
+                  <Link
+                    href="/casos/nuevo"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-blue-600 font-bold rounded-xl text-xs hover:bg-blue-50 transition-colors"
+                  >
+                    Publicar mi caso
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

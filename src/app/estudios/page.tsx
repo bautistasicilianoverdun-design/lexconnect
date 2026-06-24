@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { createClient } from '@/lib/supabase/server'
 
 const MOCK_FIRMS = [
   {
@@ -117,7 +118,15 @@ const MOCK_FIRMS = [
   },
 ]
 
-export default function EstudiosPage() {
+export default async function EstudiosPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  let isLawyer = false
+  if (user) {
+    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    isLawyer = data?.role === 'lawyer' || data?.role === 'firm_admin'
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />
@@ -238,19 +247,21 @@ export default function EstudiosPage() {
           </div>
 
           {/* CTA para estudios */}
-          <div className="mt-12 bg-slate-900 rounded-2xl p-8 text-center text-white">
-            <Building2 className="h-10 w-10 mx-auto mb-4 text-blue-400" />
-            <h3 className="text-xl font-bold mb-2">¿Tenés un estudio jurídico?</h3>
-            <p className="text-slate-300 text-sm mb-6 max-w-md mx-auto">
-              Creá la página institucional de tu estudio, mostrá a tu equipo y empezá a recibir consultas hoy.
-            </p>
-            <Link
-              href="/registro?rol=estudio"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm"
-            >
-              Registrar mi estudio <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          {!isLawyer && (
+            <div className="mt-12 bg-slate-900 rounded-2xl p-8 text-center text-white">
+              <Building2 className="h-10 w-10 mx-auto mb-4 text-blue-400" />
+              <h3 className="text-xl font-bold mb-2">¿Tenés un estudio jurídico?</h3>
+              <p className="text-slate-300 text-sm mb-6 max-w-md mx-auto">
+                Creá la página institucional de tu estudio, mostrá a tu equipo y empezá a recibir consultas hoy.
+              </p>
+              <Link
+                href="/registro?rol=estudio"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                Registrar mi estudio <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

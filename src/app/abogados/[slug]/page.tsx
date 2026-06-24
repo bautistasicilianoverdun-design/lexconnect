@@ -42,6 +42,13 @@ export default async function LawyerProfilePage({
   const { slug } = await params
   const supabase  = await createClient()
 
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  let isCurrentLawyer = false
+  if (currentUser) {
+    const { data: cp } = await supabase.from('profiles').select('role').eq('id', currentUser.id).maybeSingle()
+    isCurrentLawyer = cp?.role === 'lawyer' || cp?.role === 'firm_admin'
+  }
+
   // Buscar por slug o por id (UUID)
   const isUUID = IS_UUID.test(slug)
   const { data: lp } = await supabase
@@ -53,7 +60,7 @@ export default async function LawyerProfilePage({
       cases_handled, consultations_answered,
       response_time_hours, accepts_new_clients,
       license_number, university, graduation_year,
-      profiles(full_name, avatar_url, city, bio, website, linkedin_url,
+      profiles!user_id(full_name, avatar_url, city, bio, website, linkedin_url,
         provinces(name)
       ),
       license_province:provinces!license_province_id(name),
@@ -437,13 +444,15 @@ export default async function LawyerProfilePage({
                         <MessageSquare className="h-4 w-4" />
                         Enviar mensaje
                       </Link>
-                      <Link
-                        href="/casos/nuevo"
-                        className="w-full h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        Publicar mi caso
-                      </Link>
+                      {!isCurrentLawyer && (
+                        <Link
+                          href="/casos/nuevo"
+                          className="w-full h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          Publicar mi caso
+                        </Link>
+                      )}
                     </div>
                   </>
                 ) : (

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import {
   MapPin, Star, CheckCircle2, Users, ArrowLeft,
   Globe, Phone, Building2, MessageSquare, ChevronRight, Calendar,
@@ -110,6 +111,14 @@ export default async function EstudioDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const firm = MOCK_FIRMS[slug]
   if (!firm) notFound()
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  let isLawyer = false
+  if (user) {
+    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    isLawyer = data?.role === 'lawyer' || data?.role === 'firm_admin'
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -237,12 +246,14 @@ export default async function EstudioDetailPage({ params }: { params: Promise<{ 
                   >
                     <MessageSquare className="h-4 w-4" /> Contactar estudio
                   </Link>
-                  <Link
-                    href="/casos/nuevo"
-                    className="flex items-center justify-center gap-2 w-full py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-xl transition-colors"
-                  >
-                    Publicar mi caso
-                  </Link>
+                  {!isLawyer && (
+                    <Link
+                      href="/casos/nuevo"
+                      className="flex items-center justify-center gap-2 w-full py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-xl transition-colors"
+                    >
+                      Publicar mi caso
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -270,17 +281,19 @@ export default async function EstudioDetailPage({ params }: { params: Promise<{ 
                 })}
               </div>
 
-              <div className="bg-slate-900 rounded-2xl p-5 text-center text-white">
-                <Building2 className="h-8 w-8 mx-auto mb-3 text-blue-400" />
-                <p className="font-bold text-sm mb-1">¿Tenés un estudio?</p>
-                <p className="text-slate-300 text-xs mb-4">Creá tu página institucional y empezá a recibir consultas.</p>
-                <Link
-                  href="/registro?rol=estudio"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors"
-                >
-                  Registrar estudio <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
+              {!isLawyer && (
+                <div className="bg-slate-900 rounded-2xl p-5 text-center text-white">
+                  <Building2 className="h-8 w-8 mx-auto mb-3 text-blue-400" />
+                  <p className="font-bold text-sm mb-1">¿Tenés un estudio?</p>
+                  <p className="text-slate-300 text-xs mb-4">Creá tu página institucional y empezá a recibir consultas.</p>
+                  <Link
+                    href="/registro?rol=estudio"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors"
+                  >
+                    Registrar estudio <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

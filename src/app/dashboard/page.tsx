@@ -61,7 +61,7 @@ export default async function DashboardHome() {
       : supabase.from('conversations').select('client_unread').eq('client_id', user.id),
     supabase
       .from('legal_cases')
-      .select('id, title, status, proposals_count, created_at, legal_categories(name)')
+      .select('id, title, status, proposals_count, created_at, legal_categories!category_id(name)')
       .eq('client_id', user.id)
       .order('created_at', { ascending: false })
       .limit(3),

@@ -95,7 +95,7 @@ function CasosContent() {
         .from('legal_cases')
         .select(`
           id, title, description, urgency, views_count, proposals_count, created_at,
-          legal_categories(name, slug),
+          legal_categories!category_id(name, slug),
           provinces(name)
         `)
         .eq('status', 'open')
@@ -253,8 +253,12 @@ function CasosContent() {
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
               <FileText className="h-10 w-10 mx-auto text-slate-200 mb-3" />
-              <p className="font-semibold text-slate-700">No hay casos que coincidan con tu búsqueda</p>
-              <p className="text-sm text-slate-400 mt-1">Probá cambiando los filtros o la categoría</p>
+              <p className="font-semibold text-slate-700">
+                {cases.length === 0 ? 'No encontramos casos' : 'No hay casos que coincidan con tu búsqueda'}
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                {cases.length === 0 ? 'Todavía no hay casos registrados en la plataforma.' : 'Probá cambiando los filtros o la categoría'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">

@@ -5,6 +5,7 @@ import {
   Plus, Star, MapPin, CheckCircle2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { startConversation, acceptProposal, rejectProposal } from './actions'
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
@@ -47,13 +48,14 @@ export default async function MisCasosPage() {
     .select(`
       id, title, description, status, urgency,
       views_count, proposals_count, created_at,
-      legal_categories(name),
-      provinces(name),
+      ai_summary,
+      legal_categories!category_id(name),
+      provinces!province_id(name),
       case_proposals(
         id, message, proposed_fee, fee_type, status, created_at,
-        lawyer_profiles!inner(
+        lawyer_profiles(
           id, rating_avg, rating_count, verification_status,
-          profiles!inner(full_name, city)
+          profiles!user_id(full_name, city)
         )
       )
     `)
@@ -97,7 +99,7 @@ export default async function MisCasosPage() {
           const status = STATUS_STYLES[c.status] ?? STATUS_STYLES.open
 
           return (
-            <div key={c.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div key={c.id} id={c.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden scroll-mt-24">
               {/* Case header */}
               <div className="p-6 border-b border-slate-100">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -114,7 +116,16 @@ export default async function MisCasosPage() {
                   </span>
                 </div>
                 <h2 className="text-lg font-bold text-slate-900 mb-1">{c.title}</h2>
-                <p className="text-sm text-slate-500 line-clamp-2">{c.description}</p>
+                {(c as any).ai_summary ? (
+                  <div className="flex items-start gap-2 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 mb-2">
+                    <svg className="h-3.5 w-3.5 text-violet-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    <p className="text-xs text-violet-800 leading-relaxed">{(c as any).ai_summary}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 line-clamp-2 mb-0">{c.description}</p>
+                )}
                 <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
                   {prov && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{prov.name}</span>}
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo(c.created_at)}</span>
@@ -170,12 +181,40 @@ export default async function MisCasosPage() {
                               </div>
                             )}
                             <div className="mt-3 flex flex-wrap gap-2">
-                              <Link
-                                href={`/dashboard/mensajes`}
-                                className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors"
-                              >
-                                Responder
-                              </Link>
+                              {p.status === 'accepted' ? (
+                                <>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-100 text-xs font-semibold text-green-700">
+                                    <CheckCircle2 className="h-3 w-3" /> Aceptado
+                                  </span>
+                                  <form action={startConversation.bind(null, c.id, lawyerProfile?.id ?? '')}>
+                                    <button type="submit" className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors">
+                                      Ir al chat
+                                    </button>
+                                  </form>
+                                </>
+                              ) : p.status === 'rejected' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium text-slate-400">
+                                  No seleccionado
+                                </span>
+                              ) : (
+                                <>
+                                  <form action={acceptProposal.bind(null, c.id, p.id, lawyerProfile?.id ?? '')}>
+                                    <button type="submit" className="px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-xs font-semibold text-white transition-colors">
+                                      Aceptar
+                                    </button>
+                                  </form>
+                                  <form action={startConversation.bind(null, c.id, lawyerProfile?.id ?? '')}>
+                                    <button type="submit" className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors">
+                                      Preguntar
+                                    </button>
+                                  </form>
+                                  <form action={rejectProposal.bind(null, p.id)}>
+                                    <button type="submit" className="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-500 transition-colors">
+                                      Rechazar
+                                    </button>
+                                  </form>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

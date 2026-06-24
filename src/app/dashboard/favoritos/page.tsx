@@ -57,7 +57,7 @@ export default function FavoritosPage() {
             id, slug, rating_avg, rating_count,
             verification_status, cases_handled, response_time_hours,
             lawyer_specialties(is_primary, legal_categories(name)),
-            profiles(full_name, city, avatar_url)
+            profiles!user_id(full_name, city, avatar_url)
           )
         `)
         .eq('client_id', user.id)
