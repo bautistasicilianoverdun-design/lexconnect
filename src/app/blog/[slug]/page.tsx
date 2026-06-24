@@ -93,7 +93,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
             {/* Content */}
             <div className="prose prose-slate max-w-none">
-              {article.content.split('\n\n').map((paragraph, i) => (
+              {article.content.split('\n\n').map((paragraph: string, i: number) => (
                 <p key={i} className="text-slate-700 leading-relaxed mb-4 text-base">
                   {paragraph}
                 </p>
