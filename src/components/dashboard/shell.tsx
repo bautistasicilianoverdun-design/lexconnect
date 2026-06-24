@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, FileText, MessageSquare, User,
   Search, Star, LogOut, Settings,
-  Briefcase, BarChart2, BookOpen,
+  Briefcase, BarChart2, BookOpen, Shield,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -73,9 +73,12 @@ export default function DashboardShell({
 }) {
   const router = useRouter()
   const isLawyer = profile.role === 'lawyer' || profile.role === 'firm_admin'
-  const nav = isLawyer ? LAWYER_NAV : CLIENT_NAV
+  const isAdmin = profile.role === 'admin'
+  const nav = isAdmin
+    ? [...CLIENT_NAV, { href: '/dashboard/admin', label: 'Administracion', icon: Shield }]
+    : isLawyer ? LAWYER_NAV : CLIENT_NAV
   const avatar = getInitials(profile.full_name || email || 'U')
-  const roleLabel = profile.role === 'lawyer' ? 'Abogado' : profile.role === 'firm_admin' ? 'Estudio' : 'Cliente'
+  const roleLabel = profile.role === 'lawyer' ? 'Abogado' : profile.role === 'firm_admin' ? 'Estudio' : profile.role === 'admin' ? 'Admin' : 'Cliente'
 
   async function handleLogout() {
     const supabase = createClient()
