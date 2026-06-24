@@ -24,7 +24,7 @@ export default async function EditarArticuloPage({ params }: { params: Promise<{
     .eq('is_active', true)
     .order('sort_order')
 
-  const updateWithId = updateArticle.bind(null, id)
+  
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -38,7 +38,7 @@ export default async function EditarArticuloPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      <form action={updateWithId} className="space-y-5">
+      <form action={updateArticle.bind(null, id)} className="space-y-5">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
