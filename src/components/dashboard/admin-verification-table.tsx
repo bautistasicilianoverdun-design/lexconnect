@@ -13,7 +13,7 @@ type Record_ = {
   matricula_folio: string | null
   verification_submitted_at: string | null
   verification_documents: string[] | null
-  profiles: { full_name: string } | null
+  profiles: { full_name: string }[] | { full_name: string } | null
 }
 
 const BAR_LABELS: Record<string, string> = {
@@ -81,7 +81,8 @@ export function AdminVerificationTable({ records }: { records: Record_[] }) {
 
       <div className="divide-y divide-[#EAEAEA]">
         {records.map((r) => {
-          const name = r.profiles?.full_name ?? 'Sin nombre'
+          const profileData = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles
+          const name = profileData?.full_name ?? 'Sin nombre'
           const isOpen = expanded === r.id
           const hasDocs = (r.verification_documents?.length ?? 0) > 0
 
