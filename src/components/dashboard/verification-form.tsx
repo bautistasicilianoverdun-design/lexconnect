@@ -21,11 +21,107 @@ interface Props {
   existingDocuments: string[]
 }
 
-const BAR_ASSOCIATIONS = [
-  { value: 'cpacf', label: 'CPACF — Capital Federal', auto: true },
-  { value: 'casi',  label: 'CASI — San Isidro (Prov. Buenos Aires)', auto: false },
-  { value: 'cac',   label: 'CAC — Cordoba', auto: false },
-  { value: 'other', label: 'Otro colegio — revision manual', auto: false },
+type BarEntry = { value: string; label: string; province: string; auto: boolean }
+
+const BAR_ASSOCIATIONS: BarEntry[] = [
+  // Capital Federal
+  { value: 'cpacf',  label: 'CPACF — Capital Federal',         province: 'Capital Federal',  auto: true },
+  // Buenos Aires
+  { value: 'casi',   label: 'CASI — San Isidro',                province: 'Buenos Aires',     auto: false },
+  { value: 'calp',   label: 'CALP — La Plata',                  province: 'Buenos Aires',     auto: false },
+  { value: 'camr',   label: 'CAMR — Mar del Plata',             province: 'Buenos Aires',     auto: false },
+  { value: 'casm',   label: 'CASM — San Martin',                province: 'Buenos Aires',     auto: false },
+  { value: 'cabb',   label: 'CABB — Bahia Blanca',              province: 'Buenos Aires',     auto: false },
+  { value: 'calz',   label: 'CALZ — Lomas de Zamora',           province: 'Buenos Aires',     auto: false },
+  { value: 'camor',  label: 'CAMOR — Moron',                    province: 'Buenos Aires',     auto: false },
+  { value: 'caqui',  label: 'CAQui — Quilmes',                  province: 'Buenos Aires',     auto: false },
+  { value: 'caaza',  label: 'CAA — Azul',                       province: 'Buenos Aires',     auto: false },
+  { value: 'cajun',  label: 'CAJ — Junin',                      province: 'Buenos Aires',     auto: false },
+  { value: 'caper',  label: 'CAPER — Pergamino',                province: 'Buenos Aires',     auto: false },
+  { value: 'cazar',  label: 'CAZAR — Zarate / Campana',         province: 'Buenos Aires',     auto: false },
+  { value: 'cadol',  label: 'CADOL — Dolores',                  province: 'Buenos Aires',     auto: false },
+  { value: 'canec',  label: 'CANEC — Necochea',                 province: 'Buenos Aires',     auto: false },
+  { value: 'caolav', label: 'CAOLAV — Olavarria',               province: 'Buenos Aires',     auto: false },
+  { value: 'catan',  label: 'CATAN — Tandil',                   province: 'Buenos Aires',     auto: false },
+  // Cordoba
+  { value: 'cac',    label: 'CAC — Cordoba Capital',            province: 'Cordoba',          auto: false },
+  { value: 'cacrio', label: 'CACRIO — Rio Cuarto',              province: 'Cordoba',          auto: false },
+  { value: 'cacvil', label: 'CACVIL — Villa Maria',             province: 'Cordoba',          auto: false },
+  // Santa Fe
+  { value: 'car',    label: 'CAR — Rosario',                    province: 'Santa Fe',         auto: false },
+  { value: 'casf',   label: 'CASF — Santa Fe Capital',          province: 'Santa Fe',         auto: false },
+  // Mendoza
+  { value: 'cam',    label: 'CAM — Mendoza',                    province: 'Mendoza',          auto: false },
+  // Tucuman
+  { value: 'cat',    label: 'CAT — Tucuman',                    province: 'Tucuman',          auto: false },
+  // Salta
+  { value: 'cas',    label: 'CAS — Salta',                      province: 'Salta',            auto: false },
+  // Jujuy
+  { value: 'caj',    label: 'CAJ — San Salvador de Jujuy',      province: 'Jujuy',            auto: false },
+  // Entre Rios
+  { value: 'caer',   label: 'CAER — Parana',                    province: 'Entre Rios',       auto: false },
+  { value: 'caerg',  label: 'CAERG — Gualeguaychu',             province: 'Entre Rios',       auto: false },
+  // Corrientes
+  { value: 'cacor',  label: 'CACOR — Corrientes',               province: 'Corrientes',       auto: false },
+  // Misiones
+  { value: 'cami',   label: 'CAMI — Posadas',                   province: 'Misiones',         auto: false },
+  // Chaco
+  { value: 'cach',   label: 'CACH — Resistencia',               province: 'Chaco',            auto: false },
+  // Formosa
+  { value: 'caf',    label: 'CAF — Formosa',                    province: 'Formosa',          auto: false },
+  // Santiago del Estero
+  { value: 'case',   label: 'CASE — Santiago del Estero',       province: 'Santiago del Estero', auto: false },
+  // La Rioja
+  { value: 'calr',   label: 'CALR — La Rioja',                  province: 'La Rioja',         auto: false },
+  // Catamarca
+  { value: 'cacat',  label: 'CACAT — Catamarca',                province: 'Catamarca',        auto: false },
+  // San Juan
+  { value: 'casj',   label: 'CASJ — San Juan',                  province: 'San Juan',         auto: false },
+  // San Luis
+  { value: 'casl',   label: 'CASL — San Luis',                  province: 'San Luis',         auto: false },
+  // La Pampa
+  { value: 'calpa',  label: 'CALPA — Santa Rosa',               province: 'La Pampa',         auto: false },
+  // Neuquen
+  { value: 'can',    label: 'CAN — Neuquen',                    province: 'Neuquen',          auto: false },
+  // Rio Negro
+  { value: 'carn',   label: 'CARN — Viedma / Bariloche',        province: 'Rio Negro',        auto: false },
+  // Chubut
+  { value: 'cachu',  label: 'CACHU — Comodoro / Rawson',        province: 'Chubut',           auto: false },
+  // Santa Cruz
+  { value: 'casc',   label: 'CASC — Rio Gallegos',              province: 'Santa Cruz',       auto: false },
+  // Tierra del Fuego
+  { value: 'catdf',  label: 'CATDF — Ushuaia',                  province: 'Tierra del Fuego', auto: false },
+  // Otro
+  { value: 'other',  label: 'Otro colegio',                     province: 'Otro',             auto: false },
+]
+
+// Group provinces in display order
+const PROVINCES_ORDER = [
+  'Capital Federal',
+  'Buenos Aires',
+  'Cordoba',
+  'Santa Fe',
+  'Mendoza',
+  'Tucuman',
+  'Salta',
+  'Jujuy',
+  'Entre Rios',
+  'Corrientes',
+  'Misiones',
+  'Chaco',
+  'Formosa',
+  'Santiago del Estero',
+  'La Rioja',
+  'Catamarca',
+  'San Juan',
+  'San Luis',
+  'La Pampa',
+  'Neuquen',
+  'Rio Negro',
+  'Chubut',
+  'Santa Cruz',
+  'Tierra del Fuego',
+  'Otro',
 ]
 
 const DOCS_REQUIRED = [
@@ -264,15 +360,23 @@ export function VerificationForm({
               className="w-full border border-[#EAEAEA] rounded-lg px-3 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
             >
               <option value="" disabled>Selecciona tu colegio</option>
-              {BAR_ASSOCIATIONS.map(b => (
-                <option key={b.value} value={b.value}>{b.label}</option>
-              ))}
+              {PROVINCES_ORDER.map(province => {
+                const entries = BAR_ASSOCIATIONS.filter(b => b.province === province)
+                if (entries.length === 0) return null
+                return (
+                  <optgroup key={province} label={province}>
+                    {entries.map(b => (
+                      <option key={b.value} value={b.value}>{b.label}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
             </select>
             {selectedBar && (
               <p className="text-xs text-slate-400">
                 {selectedBar.auto
-                  ? 'Verificacion automatica contra directorio publico'
-                  : 'Verificacion manual — un admin revisara tus documentos en 24-48 h'}
+                  ? 'Verificacion automatica al instante contra directorio publico del colegio'
+                  : 'Verificacion manual — un admin revisara tus documentos en 24-48 h habiles'}
               </p>
             )}
           </div>
@@ -346,7 +450,7 @@ export function VerificationForm({
                   <polyline points="17 8 12 3 7 8"/>
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                <p className="text-sm text-slate-500">Solta archivos aca o <span className="text-slate-900 font-medium">hacé clic para seleccionar</span></p>
+                <p className="text-sm text-slate-500">Solta archivos aca o <span className="text-slate-900 font-medium">hace clic para seleccionar</span></p>
                 <p className="text-xs text-slate-400 mt-1">JPG, PNG, PDF — max 10 MB por archivo</p>
               </div>
               <input
@@ -435,11 +539,10 @@ export function VerificationForm({
         <div className="space-y-2">
           {[
             { bar: 'CPACF (Capital Federal)', desc: 'Verificacion automatica al instante contra el directorio publico del colegio.' },
-            { bar: 'CASI (Prov. Buenos Aires) y CAC (Cordoba)', desc: 'Revision manual por nuestro equipo en 24-48 horas habiles.' },
-            { bar: 'Otros colegios', desc: 'Revision manual. Adjunta tu carnet y certificado de matricula vigente.' },
+            { bar: 'Resto de colegios', desc: 'Revision manual por nuestro equipo en 24-48 horas habiles. Adjunta tu carnet y certificado de matricula vigente.' },
           ].map(item => (
             <div key={item.bar} className="flex gap-2.5 text-xs">
-              <span className="shrink-0 font-medium text-slate-700 w-52">{item.bar}</span>
+              <span className="shrink-0 font-medium text-slate-700 w-44">{item.bar}</span>
               <span className="text-slate-500">{item.desc}</span>
             </div>
           ))}

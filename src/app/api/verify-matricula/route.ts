@@ -157,18 +157,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let result: VerifyResult
 
+  const VALID_CODES = new Set([
+    'cpacf',
+    'casi','calp','camr','casm','cabb','calz','camor','caqui',
+    'caaza','cajun','caper','cazar','cadol','canec','caolav','catan',
+    'cac','cacrio','cacvil',
+    'car','casf',
+    'cam','cat','cas','caj',
+    'caer','caerg',
+    'cacor','cami','cach','caf','case','calr','cacat','casj','casl',
+    'calpa','can','carn','cachu','casc','catdf',
+    'other',
+  ])
+
+  if (!VALID_CODES.has(bar_association)) {
+    return NextResponse.json({ error: 'Jurisdiccion no valida' }, { status: 400 })
+  }
+
   switch (bar_association) {
     case 'cpacf':
       result = await verifyCPACF(tomo, folio, last_name)
       break
-    case 'casi':
-    case 'cac':
-    case 'other':
-      // No public directory to query — goes to manual admin review
+    default:
+      // All other colegios: manual admin review
       result = { status: 'pending_manual' }
       break
-    default:
-      return NextResponse.json({ error: 'Jurisdiccion no válida' }, { status: 400 })
   }
 
   // Map result to verification_status enum
