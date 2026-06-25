@@ -127,3 +127,8 @@ export async function rejectProposal(proposalId: string) {
 
   revalidatePath('/dashboard/mis-casos')
 }
+
+export async function closeCaseAction(caseId: string) {
+  const { closeCase } = await import('@/lib/reviews')
+  return closeCase(caseId)
+}

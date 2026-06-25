@@ -14,6 +14,7 @@ const CLIENT_NAV = [
   { href: '/dashboard/mis-casos', label: 'Mis casos', icon: FileText },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
   { href: '/dashboard/favoritos', label: 'Favoritos', icon: Star },
+  { href: '/dashboard/valoraciones', label: 'Valoraciones', icon: Star },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },
 ]
 
@@ -24,6 +25,7 @@ const LAWYER_NAV = [
   { href: '/dashboard/mis-articulos', label: 'Mis articulos', icon: BookOpen },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
   { href: '/dashboard/estadisticas', label: 'Estadisticas', icon: BarChart2 },
+  { href: '/dashboard/valoraciones', label: 'Valoraciones', icon: Star },
   { href: '/dashboard/suscripcion', label: 'Suscripcion', icon: CreditCard },
   { href: '/dashboard/verificacion', label: 'Verificacion', icon: Shield },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },

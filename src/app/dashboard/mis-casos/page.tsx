@@ -5,7 +5,7 @@ import {
   Plus, Star, MapPin, CheckCircle2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { startConversation, acceptProposal, rejectProposal } from './actions'
+import { startConversation, acceptProposal, rejectProposal, closeCaseAction } from './actions'
 import { CaseDocumentsSection } from '@/components/dashboard/case-documents-section'
 
 function timeAgo(date: string) {
@@ -233,10 +233,20 @@ export default async function MisCasosPage() {
 
               <CaseDocumentsSection caseId={c.id} currentUserId={user.id} />
 
-              <div className="px-6 pb-5 pt-2 border-t border-slate-100 flex justify-end">
+              <div className="px-6 pb-5 pt-2 border-t border-slate-100 flex items-center justify-between">
                 <Link href={`/casos/${c.id}`} className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
                   Ver caso publico <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
+                {c.status === 'in_progress' && (
+                  <form action={closeCaseAction.bind(null, c.id)}>
+                    <button
+                      type="submit"
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    >
+                      Cerrar caso
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           )
