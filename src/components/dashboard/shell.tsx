@@ -115,7 +115,7 @@ export default function DashboardShell({
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {nav.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
@@ -175,4 +175,10 @@ export default function DashboardShell({
           </Link>
         </nav>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 l
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
