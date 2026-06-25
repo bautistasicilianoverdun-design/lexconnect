@@ -24,6 +24,7 @@ const LAWYER_NAV = [
   { href: '/dashboard/mis-articulos', label: 'Mis articulos', icon: BookOpen },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
   { href: '/dashboard/estadisticas', label: 'Estadisticas', icon: BarChart2 },
+  { href: '/dashboard/verificacion', label: 'Verificacion', icon: Shield },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },
 ]
 
