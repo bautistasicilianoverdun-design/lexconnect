@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, FileText, MessageSquare, User,
   Search, Star, LogOut, Settings,
-  Briefcase, BarChart2, BookOpen, Shield,
+  Briefcase, BarChart2, BookOpen, Shield, CreditCard,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -24,6 +24,7 @@ const LAWYER_NAV = [
   { href: '/dashboard/mis-articulos', label: 'Mis articulos', icon: BookOpen },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
   { href: '/dashboard/estadisticas', label: 'Estadisticas', icon: BarChart2 },
+  { href: '/dashboard/suscripcion', label: 'Suscripcion', icon: CreditCard },
   { href: '/dashboard/verificacion', label: 'Verificacion', icon: Shield },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },
 ]
@@ -174,10 +175,4 @@ export default function DashboardShell({
           </Link>
         </nav>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
-          {children}
-        </main>
-      </div>
-    </div>
-  )
-}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 l

@@ -1,251 +1,156 @@
-import { Check, Star, Zap, Building, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { MP_PLANS } from '@/lib/mercadopago'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
-import { createClient } from '@/lib/supabase/server'
+import { PricingSubscribeButton } from '@/components/landing/pricing-subscribe-button'
 
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Básico',
-    price: 'Gratis',
-    period: '',
-    description: 'Para comenzar a construir tu presencia en LexConnect',
-    icon: null,
-    color: 'border-slate-200',
-    badge: null,
-    features: [
-      'Perfil profesional público',
-      'Especialidades y experiencia',
-      'Verificación de identidad',
-      'Recibir mensajes de clientes',
-      'Hasta 5 propuestas por mes',
-      'Acceso a casos públicos',
-    ],
-    missing: [
-      'Aparición prioritaria en búsquedas',
-      'Estadísticas avanzadas',
-      'Badge de profesional verificado',
-      'Chat prioritario',
-    ],
-    cta: 'Empezar gratis',
-    ctaStyle: 'border border-slate-200 hover:bg-slate-50 text-slate-700',
-  },
-  {
-    id: 'professional',
-    name: 'Profesional',
-    price: '$8.500',
-    period: '/mes',
-    description: 'Mayor visibilidad y herramientas para crecer',
-    icon: Zap,
-    color: 'border-blue-500',
-    badge: 'Más popular',
-    features: [
-      'Todo lo del plan Básico',
-      'Aparición prioritaria en búsquedas',
-      'Badge "Profesional Verificado"',
-      'Propuestas ilimitadas',
-      'Estadísticas de perfil',
-      'Soporte prioritario',
-      'Acceso a casos privados',
-      'Videollamadas integradas',
-    ],
-    missing: [
-      'Posición #1 en resultados',
-      'Panel de administración avanzado',
-    ],
-    cta: 'Comenzar prueba 14 días gratis',
-    ctaStyle: 'bg-blue-600 hover:bg-blue-700 text-white',
-    highlighted: true,
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '$19.900',
-    period: '/mes',
-    description: 'Máxima visibilidad y herramientas avanzadas',
-    icon: Star,
-    color: 'border-amber-400',
-    badge: 'Premium',
-    features: [
-      'Todo lo del plan Profesional',
-      'Posición #1 en resultados de búsqueda',
-      'Badge dorado "Premium"',
-      'Publicaciones destacadas ilimitadas',
-      'Análisis y reportes avanzados',
-      'Dashboard de gestión de casos',
-      'Integración con calendario',
-      'API de videollamadas personalizada',
-      'Soporte 24/7 dedicado',
-    ],
-    missing: [],
-    cta: 'Comenzar prueba 14 días gratis',
-    ctaStyle: 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white',
-  },
+export const metadata = { title: 'Precios — LexConnect' }
+
+const FREE_FEATURES = [
+  'Hasta 3 propuestas por mes',
+  'Perfil publico de abogado',
+  'Mensajeria con clientes',
+  'Acceso a casos disponibles',
+  'Verificacion de identidad',
 ]
 
-const FIRM_PLAN = {
-  features: [
-    'Página institucional del estudio',
-    'Perfiles de todos los abogados miembros',
-    'Panel de administración centralizado',
-    'Estadísticas del estudio',
-    'Posición premium en búsquedas',
-    'Publicaciones de contenido legal',
-    'Soporte dedicado',
-    'Acceso a API (próximamente)',
-  ],
-}
-
 const FAQ = [
-  {
-    q: '¿Puedo cancelar en cualquier momento?',
-    a: 'Sí, podés cancelar tu suscripción en cualquier momento desde tu panel de configuración. No hay permanencia mínima.',
-  },
-  {
-    q: '¿Cómo funciona la prueba gratuita?',
-    a: 'Tenés 14 días para probar el plan Profesional o Premium sin cargo. No necesitás tarjeta de crédito para comenzar.',
-  },
-  {
-    q: '¿Qué medios de pago aceptan?',
-    a: 'Aceptamos tarjetas de crédito y débito (Visa, Mastercard, Amex), transferencia bancaria y Mercado Pago.',
-  },
-  {
-    q: '¿LexConnect cobra comisión por los casos que consigo?',
-    a: 'No. LexConnect cobra únicamente la suscripción mensual. No cobramos comisiones por honorarios ni por casos cerrados.',
-  },
-  {
-    q: '¿Los precios incluyen IVA?',
-    a: 'Los precios mostrados son finales e incluyen IVA para consumidores finales. Profesionales pueden solicitar factura.',
-  },
+  { q: 'Puedo cancelar en cualquier momento?', a: 'Si. No hay contratos ni permanencia minima. Seguiras teniendo acceso hasta el fin del periodo pagado.' },
+  { q: 'Que medios de pago aceptan?', a: 'Aceptamos tarjetas de credito y debito (Visa, Mastercard, Amex) y todos los medios disponibles en MercadoPago.' },
+  { q: 'LexConnect cobra comision por los casos?', a: 'No. Cobramos unicamente la suscripcion mensual. Sin comisiones por honorarios ni por casos cerrados.' },
+  { q: 'Los precios incluyen IVA?', a: 'Los precios mostrados son finales. Profesionales pueden solicitar factura a soporte.' },
 ]
 
 export default async function PricingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  let isLawyer = false
+  let currentPlan: string | null = null
+
   if (user) {
-    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (data?.role === 'client') redirect('/')
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    isLawyer = profile?.role === 'lawyer'
+    if (isLawyer) {
+      const { data: lp } = await supabase.from('lawyer_profiles').select('plan_type').eq('user_id', user.id).single()
+      currentPlan = lp?.plan_type ?? 'free'
+    }
   }
 
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />
-      <main className="flex-1 bg-slate-50">
+      <main className="flex-1 bg-[#F7F6F3]">
+
         {/* Hero */}
-        <div className="bg-white border-b border-slate-200 py-16 text-center">
-          <div className="mx-auto max-w-3xl px-4">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">
-              Planes para profesionales del derecho
+        <div className="bg-white border-b border-[#EAEAEA] py-20 text-center">
+          <div className="max-w-3xl mx-auto px-6">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Planes y precios</p>
+            <h1 className="text-4xl font-bold text-slate-900 mb-4" style={{ letterSpacing: '-0.02em' }}>
+              El plan adecuado para cada abogado
             </h1>
-            <p className="text-lg text-slate-500 max-w-xl mx-auto">
-              Sin comisiones. Sin sorpresas. Elegí el plan que mejor se adapte al crecimiento de tu práctica.
+            <p className="text-lg text-slate-500">
+              Empeza gratis. Escala cuando estes listo. Sin contratos ni permanencia minima.
             </p>
           </div>
         </div>
 
-        {/* Plans */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {PLANS.map((plan) => {
-              const Icon = plan.icon
+        {/* Plans grid */}
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+
+            {/* Free */}
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 flex flex-col">
+              <div className="mb-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Basico</p>
+                <p className="text-3xl font-bold text-slate-900">$0</p>
+                <p className="text-sm text-slate-400 mt-0.5">Para siempre</p>
+              </div>
+              <ul className="space-y-2 mb-6 flex-1">
+                {FREE_FEATURES.map(f => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              {!user ? (
+                <Link href="/registro" className="block text-center py-2.5 rounded-lg border border-[#EAEAEA] text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                  Empezar gratis
+                </Link>
+              ) : currentPlan === 'free' ? (
+                <div className="py-2.5 rounded-lg bg-slate-100 text-center text-sm font-semibold text-slate-400">Plan actual</div>
+              ) : (
+                <div className="py-2.5 rounded-lg border border-[#EAEAEA] text-center text-sm text-slate-400">Plan base</div>
+              )}
+            </div>
+
+            {/* Paid plans */}
+            {(Object.entries(MP_PLANS) as [string, typeof MP_PLANS[keyof typeof MP_PLANS]][]).map(([key, plan], i) => {
+              const isCurrent = key === currentPlan
+              const isPopular = i === 1
               return (
                 <div
-                  key={plan.id}
-                  className={`relative bg-white rounded-2xl border-2 p-7 flex flex-col ${plan.color} ${
-                    plan.highlighted ? 'shadow-xl shadow-blue-100' : 'shadow-sm'
-                  }`}
+                  key={key}
+                  className="bg-white border rounded-xl p-6 flex flex-col relative"
+                  style={{ borderColor: isPopular ? '#111111' : '#EAEAEA' }}
                 >
-                  {plan.badge && (
-                    <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white ${
-                      plan.badge === 'Premium' ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-blue-600'
-                    }`}>
-                      {plan.badge}
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap">
+                        Mas popular
+                      </span>
                     </div>
                   )}
-
-                  <div className="mb-6">
-                    {Icon && (
-                      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl mb-4 ${
-                        plan.id === 'premium' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-600'
-                      }`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                    )}
-                    <h2 className="text-xl font-bold text-slate-900">{plan.name}</h2>
-                    <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-slate-900">{plan.price}</span>
-                      {plan.period && <span className="text-slate-400 text-sm">{plan.period}</span>}
-                    </div>
-                    <p className="text-sm text-slate-500 mt-2">{plan.description}</p>
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">{plan.label}</p>
+                    <p className="text-3xl font-bold text-slate-900">
+                      ${Number(plan.amount).toLocaleString('es-AR')}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-0.5">por mes · ARS</p>
                   </div>
-
-                  <ul className="space-y-2.5 flex-1 mb-8">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5">
-                        <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                        <span className="text-sm text-slate-700">{f}</span>
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {plan.features.map(f => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#346538" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        {f}
                       </li>
                     ))}
                   </ul>
-
-                  <Link
-                    href={`/registro?rol=abogado&plan=${plan.id}`}
-                    className={`w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${plan.ctaStyle}`}
-                  >
-                    {plan.cta}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  {isCurrent ? (
+                    <div className="py-2.5 rounded-lg bg-slate-900 text-center text-sm font-semibold text-white">Plan actual</div>
+                  ) : isLawyer ? (
+                    <PricingSubscribeButton planKey={key} planLabel={plan.label} isPopular={isPopular} />
+                  ) : (
+                    <Link
+                      href="/registro?rol=lawyer"
+                      className="block text-center py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
+                      style={{ backgroundColor: '#111111' }}
+                    >
+                      Comenzar con {plan.label}
+                    </Link>
+                  )}
                 </div>
               )
             })}
           </div>
 
-          {/* Firm plan */}
-          <div className="mt-10 max-w-5xl mx-auto bg-slate-900 rounded-2xl p-8 text-white">
-            <div className="flex flex-col md:flex-row gap-8 items-center">
-              <div className="flex-1">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <Building className="h-6 w-6 text-blue-400" />
-                  <h2 className="text-xl font-bold">Plan Estudios Jurídicos</h2>
+          {/* FAQ */}
+          <div className="mt-20 max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold text-slate-900 mb-8 text-center">Preguntas frecuentes</h2>
+            <div className="divide-y divide-[#EAEAEA]">
+              {FAQ.map(item => (
+                <div key={item.q} className="py-5">
+                  <p className="font-semibold text-sm text-slate-900 mb-2">{item.q}</p>
+                  <p className="text-sm text-slate-500">{item.a}</p>
                 </div>
-                <p className="text-slate-300 text-sm mb-4">
-                  Para estudios que quieren una presencia profesional y gestionar a todo su equipo en una sola plataforma.
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {FIRM_PLAN.features.map((f) => (
-                    <div key={f} className="flex items-center gap-2">
-                      <Check className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                      <span className="text-xs text-slate-300">{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="shrink-0 text-center">
-                <div className="text-4xl font-bold mb-1">$39.900</div>
-                <div className="text-slate-400 text-sm">/mes · hasta 10 miembros</div>
-                <Link
-                  href="/contacto?tipo=estudio"
-                  className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors"
-                >
-                  Hablar con ventas <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* FAQ */}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pb-20">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-10">Preguntas frecuentes</h2>
-          <div className="space-y-4">
-            {FAQ.map(({ q, a }) => (
-              <div key={q} className="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="font-semibold text-slate-900 text-sm mb-2">{q}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
-              </div>
-            ))}
           </div>
         </div>
       </main>
