@@ -17,20 +17,18 @@ export default async function AdminPage() {
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  // Fetch all lawyer profiles pending verification or recently verified/rejected
   const { data: pending } = await supabase
     .from('lawyer_profiles')
     .select(`
       id, verification_status, verification_notes, bar_association,
       matricula_tomo, matricula_folio, verification_submitted_at,
       verification_documents,
-      profiles!user_id(full_name, email)
+      profiles!user_id(full_name)
     `)
     .in('verification_status', ['pending', 'rejected', 'verified'])
     .order('verification_submitted_at', { ascending: false, nullsFirst: false })
     .limit(100)
 
-  // Stats
   const pendingCount = pending?.filter(p => p.verification_status === 'pending').length ?? 0
   const verifiedCount = pending?.filter(p => p.verification_status === 'verified').length ?? 0
   const rejectedCount = pending?.filter(p => p.verification_status === 'rejected').length ?? 0
@@ -42,7 +40,6 @@ export default async function AdminPage() {
         <p className="text-sm text-slate-500 mt-1">Revision de matriculas y verificaciones de abogados</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Pendientes', value: pendingCount, bg: '#FBF3DB', text: '#956400' },
@@ -52,10 +49,7 @@ export default async function AdminPage() {
           <div key={s.label} className="bg-white border border-[#EAEAEA] rounded-xl p-5">
             <p className="text-3xl font-bold text-slate-900">{s.value}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <span
-                className="w-2 h-2 rounded-full inline-block"
-                style={{ backgroundColor: s.text }}
-              />
+              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.text }} />
               <p className="text-sm text-slate-500">{s.label}</p>
             </div>
           </div>

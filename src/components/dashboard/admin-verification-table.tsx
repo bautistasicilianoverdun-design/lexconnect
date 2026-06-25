@@ -13,7 +13,7 @@ type Record_ = {
   matricula_folio: string | null
   verification_submitted_at: string | null
   verification_documents: string[] | null
-  profiles: { full_name: string; email: string } | null
+  profiles: { full_name: string } | null
 }
 
 const BAR_LABELS: Record<string, string> = {
@@ -82,7 +82,6 @@ export function AdminVerificationTable({ records }: { records: Record_[] }) {
       <div className="divide-y divide-[#EAEAEA]">
         {records.map((r) => {
           const name = r.profiles?.full_name ?? 'Sin nombre'
-          const email = r.profiles?.email ?? ''
           const isOpen = expanded === r.id
           const hasDocs = (r.verification_documents?.length ?? 0) > 0
 
@@ -94,13 +93,12 @@ export function AdminVerificationTable({ records }: { records: Record_[] }) {
                     <p className="font-semibold text-sm text-slate-900">{name}</p>
                     <StatusPill status={r.verification_status} />
                   </div>
-                  <p className="text-xs text-slate-400">{email}</p>
                   <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
                     {r.bar_association && (
                       <span className="font-medium">{BAR_LABELS[r.bar_association] ?? r.bar_association}</span>
                     )}
                     {r.matricula_tomo && r.matricula_folio && (
-                      <span>Tomo {r.matricula_tomo} · Folio {r.matricula_folio}</span>
+                      <span>Tomo {r.matricula_tomo} Folio {r.matricula_folio}</span>
                     )}
                     {r.verification_submitted_at && (
                       <span className="text-slate-400">
@@ -133,7 +131,7 @@ export function AdminVerificationTable({ records }: { records: Record_[] }) {
                         {loading === r.id + 'verified' ? '...' : 'Aprobar'}
                       </button>
                       <button
-                        onClick={() => updateStatus(r.id, 'rejected', 'Rechazado por el equipo de LexConnect. Contactate con soporte para mas informacion.')}
+                        onClick={() => updateStatus(r.id, 'rejected', 'Rechazado por el equipo de LexConnect.')}
                         disabled={!!loading}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
                         style={{ backgroundColor: '#FDEBEC', color: '#9F2F2D' }}
@@ -163,7 +161,6 @@ export function AdminVerificationTable({ records }: { records: Record_[] }) {
                 </div>
               </div>
 
-              {/* Documents */}
               {isOpen && hasDocs && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {r.verification_documents!.map((path, i) => (
