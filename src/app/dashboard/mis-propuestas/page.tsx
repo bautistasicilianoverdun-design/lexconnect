@@ -98,6 +98,28 @@ export default async function MisPropuestasPage() {
     .eq('lawyer_id', lawyerProfile.id)
     .order('created_at', { ascending: false })
 
+  // Fetch conversations for accepted proposals to get direct chat links
+  const acceptedCaseIds = (proposals ?? [])
+    .filter(p => p.status === 'accepted')
+    .map(p => {
+      const lc = Array.isArray(p.legal_cases) ? p.legal_cases[0] : p.legal_cases
+      return (lc as any)?.id as string | undefined
+    })
+    .filter(Boolean) as string[]
+
+  const { data: conversations } = acceptedCaseIds.length > 0
+    ? await supabase
+        .from('conversations')
+        .select('id, case_id')
+        .in('case_id', acceptedCaseIds)
+        .eq('lawyer_id', user.id)
+    : { data: [] }
+
+  const convByCaseId: Record<string, string> = {}
+  for (const conv of conversations ?? []) {
+    if (conv.case_id) convByCaseId[conv.case_id] = conv.id
+  }
+
   const total = proposals?.length ?? 0
   const accepted = proposals?.filter((p) => p.status === 'accepted').length ?? 0
   const pending = proposals?.filter((p) => p.status === 'pending').length ?? 0
@@ -113,7 +135,7 @@ export default async function MisPropuestasPage() {
 
       {/* Stats */}
       {total > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-slate-200 p-5 text-center">
             <p className="text-3xl font-bold text-slate-900">{total}</p>
             <p className="text-xs text-slate-500 mt-1">Total enviadas</p>
@@ -125,6 +147,12 @@ export default async function MisPropuestasPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-5 text-center">
             <p className="text-3xl font-bold text-green-600">{accepted}</p>
             <p className="text-xs text-slate-500 mt-1">Aceptadas</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 text-center">
+            <p className="text-3xl font-bold text-blue-600">
+              {total > 0 ? Math.round((accepted / total) * 100) : 0}%
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Tasa de aceptacion</p>
           </div>
         </div>
       )}
@@ -142,101 +170,25 @@ export default async function MisPropuestasPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {proposals.map((p) => {
-            const legalCase = (Array.isArray(p.legal_cases) ? p.legal_cases[0] : p.legal_cases) as {
-              id: string
-              title: string
-              description: string
-              urgency: string
-              status: string
-              legal_categories: { name: string } | { name: string }[] | null
-              provinces: { name: string } | { name: string }[] | null
-              profiles: { full_name: string } | { full_name: string }[] | null
-            } | null
-
-            if (!legalCase) return null
-
-            const cat = (Array.isArray(legalCase.legal_categories) ? legalCase.legal_categories[0] : legalCase.legal_categories) as { name: string } | null
-            const prov = (Array.isArray(legalCase.provinces) ? legalCase.provinces[0] : legalCase.provinces) as { name: string } | null
-            const clientProfile = (Array.isArray(legalCase.profiles) ? legalCase.profiles[0] : legalCase.profiles) as { full_name: string } | null
-            const statusInfo = PROPOSAL_STATUS[p.status] ?? PROPOSAL_STATUS.pending
-
-            return (
-              <div key={p.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                {/* Case info */}
-                <div className="p-6 border-b border-slate-100">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    {legalCase.urgency && (
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${URGENCY_STYLES[legalCase.urgency] ?? ''}`}>
-                        {URGENCY_LABELS[legalCase.urgency] ?? legalCase.urgency}
-                      </span>
-                    )}
-                    {cat && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                        {cat.name}
-                      </span>
-                    )}
-                    {prov && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                        {prov.name}
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-base font-bold text-slate-900 mb-1">{legalCase.title}</h2>
-                  <p className="text-sm text-slate-500 line-clamp-2">{legalCase.description}</p>
-                  {clientProfile && (
-                    <p className="text-xs text-slate-400 mt-2">Cliente: {clientProfile.full_name}</p>
-                  )}
-                </div>
-
-                {/* Proposal details */}
-                <div className="p-6">
-                  <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${statusInfo.className}`}>
-                        {statusInfo.icon}
-                        {statusInfo.label}
-                      </span>
-                      <span className="text-xs text-slate-400">{timeAgo(p.created_at)}</span>
-                    </div>
-                    {(p.proposed_fee || p.fee_type) && (
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium text-slate-600">
-                        {p.proposed_fee
-                          ? `$${Number(p.proposed_fee).toLocaleString('es-AR')}`
-                          : p.fee_type === 'to_discuss' ? 'Honorarios a convenir'
-                          : p.fee_type === 'contingency' ? 'Sin anticipo - % del resultado'
-                          : p.fee_type}
-                      </span>
-                    )}
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-slate-500 mb-1.5">Tu propuesta</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{p.message}</p>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {p.status === 'accepted' && (
-                      <Link
-                        href="/dashboard/mensajes"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" /> Ir al chat
-                      </Link>
-                    )}
-                    <Link
-                      href={`/casos/${legalCase.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium rounded-lg transition-colors"
-                    >
-                      Ver caso <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <FilteredProposals proposals={proposals} convByCaseId={convByCaseId} />
       )}
     </div>
   )
 }
+
+// ─── Client component for filtering ──────────────────────────────────────────
+import { ProposalList } from './proposal-list'
+
+function FilteredProposals({
+  proposals,
+  convByCaseId,
+}: {
+  proposals: any[]
+  convByCaseId: Record<string, string>
+}) {
+  // This is a server component — we pass everything to a client component
+  return <ProposalList proposals={proposals} convByCaseId={convByCaseId} />
+}
+
+// Dummy to satisfy original structure — actual content moved to proposal-list
+
