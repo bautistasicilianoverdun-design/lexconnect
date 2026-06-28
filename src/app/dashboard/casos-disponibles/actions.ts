@@ -7,10 +7,14 @@ export async function sendProposal({
   caseId,
   lawyerProfileId,
   message,
+  feeType,
+  proposedFee,
 }: {
   caseId: string
   lawyerProfileId: string
   message: string
+  feeType?: string
+  proposedFee?: number
 }) {
   const supabase = await createClient()
 
@@ -18,7 +22,8 @@ export async function sendProposal({
     case_id: caseId,
     lawyer_id: lawyerProfileId,
     message,
-    fee_type: 'to_discuss',
+    fee_type: feeType ?? 'to_discuss',
+    proposed_fee: proposedFee ?? null,
     status: 'pending',
   })
 

@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Search, MapPin, Clock, Eye, MessageSquare,
+  Search, MapPin, Clock, Eye, MessageSquare, X,
   CheckCircle2, ChevronRight, Send, SlidersHorizontal,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -65,7 +65,16 @@ export default function CasosDisponiblesPage() {
   const [sendingId, setSendingId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState<string | null>(null)
   const [proposalText, setProposalText] = useState('')
+  const [proposalFeeType, setProposalFeeType] = useState('to_discuss')
+  const [proposalFee, setProposalFee] = useState('')
   const [proposalError, setProposalError] = useState('')
+  const [province, setProvince] = useState('')
+  const [urgency, setUrgency] = useState('')
+  const [sort, setSort] = useState('recent')
+  const [hideProposed, setHideProposed] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [dbCategories, setDbCategories] = useState<Array<{slug: string; name: string}>>([])
+  const [provinces, setProvinces] = useState<string[]>([])
 
   useEffect(() => {
     async function load() {
@@ -87,6 +96,14 @@ export default function CasosDisponiblesPage() {
       if (casesError) {
         console.error('casos-disponibles query error:', casesError)
       }
+
+      // Load categories and provinces
+      const [{ data: catData }, { data: provData }] = await Promise.all([
+        supabase.from('legal_categories').select('slug, name').order('name'),
+        supabase.from('provinces').select('name').order('name'),
+      ])
+      if (catData) setDbCategories([{ slug: 'todos', name: 'Todos' }, ...catData.map((c: any) => ({ slug: c.slug, name: c.name }))])
+      if (provData) setProvinces(provData.map((p: any) => p.name))
 
       // Get lawyer profile (optional — only needed for "already proposed" markers)
       let lpId: string | null = null
@@ -152,8 +169,21 @@ export default function CasosDisponiblesPage() {
     if (category !== 'todos') {
       list = list.filter((c) => c.categorySlug === category)
     }
+    if (province) list = list.filter((c) => c.provinceName === province)
+    if (urgency)  list = list.filter((c) => c.urgency === urgency)
+    if (hideProposed) list = list.filter((c) => !proposed[c.id])
+
+    list.sort((a, b) => {
+      if (sort === 'recent')   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (sort === 'urgent') {
+        const u: Record<string,number> = { urgent: 4, high: 3, medium: 2, low: 1 }
+        return (u[b.urgency] ?? 0) - (u[a.urgency] ?? 0)
+      }
+      if (sort === 'fewest')   return a.proposals_count - b.proposals_count
+      return 0
+    })
     return list
-  }, [cases, query, category])
+  }, [cases, query, category, province, urgency, hideProposed, sort, proposed])
 
   async function handleSendProposal(caseId: string) {
     if (!proposalText.trim() || !lawyerProfileId) return
@@ -163,6 +193,8 @@ export default function CasosDisponiblesPage() {
       caseId,
       lawyerProfileId,
       message: proposalText.trim(),
+      feeType: proposalFeeType,
+      proposedFee: proposalFeeType === 'fixed' && proposalFee ? Number(proposalFee) : undefined,
     })
     if (error) {
       setProposalError('No se pudo enviar la propuesta. Intentá de nuevo.')
@@ -170,6 +202,8 @@ export default function CasosDisponiblesPage() {
       setProposed((prev) => ({ ...prev, [caseId]: true }))
       setShowModal(null)
       setProposalText('')
+      setProposalFee('')
+      setProposalFeeType('to_discuss')
     }
     setSendingId(null)
   }
@@ -195,8 +229,9 @@ export default function CasosDisponiblesPage() {
       </div>
 
 
-      <div className="flex gap-3">
-        <div className="flex-1 flex items-center gap-2 h-10 rounded-xl border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+      {/* Search + controls */}
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex-1 min-w-48 flex items-center gap-2 h-10 rounded-xl border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
           <Search className="h-4 w-4 text-slate-400 shrink-0" />
           <input
             value={query}
@@ -204,14 +239,66 @@ export default function CasosDisponiblesPage() {
             placeholder="Buscar casos..."
             className="flex-1 text-sm outline-none placeholder:text-slate-400"
           />
+          {query && <button onClick={() => setQuery('')}><X className="h-3.5 w-3.5 text-slate-400 hover:text-slate-700" /></button>}
         </div>
-        <button className="flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 text-sm font-medium text-slate-600">
+        <select
+          value={province}
+          onChange={e => setProvince(e.target.value)}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none"
+        >
+          <option value="">Todas las provincias</option>
+          {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value)}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none"
+        >
+          <option value="recent">Más recientes</option>
+          <option value="urgent">Más urgentes</option>
+          <option value="fewest">Menos propuestas</option>
+        </select>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-medium transition-colors ${showFilters ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+        >
           <SlidersHorizontal className="h-4 w-4" /> Filtros
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {CATEGORIES.map(({ slug, name }) => (
+      {showFilters && (
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-700">Urgencia:</label>
+            <select
+              value={urgency}
+              onChange={e => setUrgency(e.target.value)}
+              className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white outline-none"
+            >
+              <option value="">Cualquiera</option>
+              <option value="urgent">Urgente</option>
+              <option value="high">Alta</option>
+              <option value="medium">Media</option>
+              <option value="low">Baja</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input type="checkbox" checked={hideProposed} onChange={e => setHideProposed(e.target.checked)} className="accent-blue-600" />
+            Ocultar casos ya propuestos
+          </label>
+          {(province || urgency || hideProposed) && (
+            <button
+              onClick={() => { setProvince(''); setUrgency(''); setHideProposed(false) }}
+              className="ml-auto text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+            >
+              <X className="h-3.5 w-3.5" /> Limpiar
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {(dbCategories.length > 0 ? dbCategories : CATEGORIES).map(({ slug, name }) => (
           <button
             key={slug}
             onClick={() => setCategory(slug)}
@@ -278,7 +365,7 @@ export default function CasosDisponiblesPage() {
                 </Link>
                 {!proposed[c.id] ? (
                   <button
-                    onClick={() => { setShowModal(c.id); setProposalError('') }}
+                    onClick={() => { setShowModal(c.id); setProposalError(''); setProposalFee(''); setProposalFeeType('to_discuss') }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-xs font-semibold text-white transition-colors"
                   >
                     <Send className="h-3.5 w-3.5" /> Proponer
@@ -311,12 +398,32 @@ export default function CasosDisponiblesPage() {
               rows={6}
               className="w-full rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 resize-none transition-all"
             />
-            <p className="text-xs text-slate-400 mt-1.5 mb-4">
+            <p className="text-xs text-slate-400 mt-1.5 mb-3">
               Sé concreto: ¿qué experiencia tenés en este tipo de caso? ¿Cuáles son tus honorarios?
             </p>
+            <div className="flex gap-3 mb-4">
+              <select
+                value={proposalFeeType}
+                onChange={e => setProposalFeeType(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-200 focus:border-blue-500 outline-none px-3 py-2 text-sm text-slate-900 bg-white"
+              >
+                <option value="to_discuss">Honorarios a convenir</option>
+                <option value="fixed">Monto fijo</option>
+                <option value="contingency">Sin anticipo — % del resultado</option>
+              </select>
+              {proposalFeeType === 'fixed' && (
+                <input
+                  type="number"
+                  value={proposalFee}
+                  onChange={e => setProposalFee(e.target.value)}
+                  placeholder="Monto ARS"
+                  className="w-36 rounded-xl border border-slate-200 focus:border-blue-500 outline-none px-3 py-2 text-sm text-slate-900"
+                />
+              )}
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowModal(null); setProposalText(''); setProposalError('') }}
+                onClick={() => { setShowModal(null); setProposalText(''); setProposalError(''); setProposalFee(''); setProposalFeeType('to_discuss') }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 Cancelar
