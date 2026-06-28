@@ -1,6 +1,6 @@
 import {
   MapPin, Star, CheckCircle2, Clock, MessageSquare, Video,
-  Briefcase, GraduationCap, Globe, Shield, Share2, BookOpen,
+  Briefcase, GraduationCap, Globe, Shield, BookOpen, ChevronRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { createClient } from '@/lib/supabase/server'
 import FavoriteButton from '@/components/FavoriteButton'
+import { ShareButton } from '@/components/lawyer/ShareButton'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ export default async function LawyerProfilePage({
       rating_avg, rating_count,
       cases_handled, consultations_answered,
       response_time_hours, accepts_new_clients,
-      license_number, university, graduation_year,
+      license_number, university, graduation_year, videocall_link,
       profiles!user_id(full_name, avatar_url, city, bio, website, linkedin_url,
         provinces(name)
       ),
@@ -77,11 +78,30 @@ export default async function LawyerProfilePage({
   // Reviews reales
   const { data: reviewsRaw } = await supabase
     .from('reviews')
-    .select('id, rating, comment, title, created_at, is_verified, profiles!reviewer_id(full_name, avatar_url)')
+    .select('id, rating, comment, title, created_at, is_verified, rating_communication, rating_expertise, rating_value, rating_responsiveness, profiles!reviewer_id(full_name, avatar_url)')
     .eq('lawyer_id', lp.id)
     .eq('is_visible', true)
     .order('created_at', { ascending: false })
     .limit(10)
+
+  // Artículos publicados del abogado
+  const { data: articlesRaw } = await supabase
+    .from('articles')
+    .select('id, title, slug, excerpt, reading_time_minutes, published_at, legal_categories(name)')
+    .eq('lawyer_id', lp.id)
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(5)
+
+  const articles = (articlesRaw ?? []).map((a: any) => ({
+    id: a.id as string,
+    title: a.title as string,
+    slug: a.slug as string,
+    excerpt: a.excerpt as string | null,
+    readingTime: a.reading_time_minutes as number | null,
+    publishedAt: timeAgo(a.published_at as string),
+    category: (Array.isArray(a.legal_categories) ? a.legal_categories[0] : a.legal_categories)?.name ?? null,
+  }))
 
   // ── Normalizar datos ──
   const profile       = (Array.isArray(lp.profiles) ? lp.profiles[0] : lp.profiles) as any
@@ -128,6 +148,10 @@ export default async function LawyerProfilePage({
       verified:  r.is_verified as boolean,
       reviewer:  (rev?.full_name as string | undefined) ?? 'Cliente',
       avatar:    (rev?.avatar_url as string | undefined) ?? null,
+      ratingComm: r.rating_communication as number | null,
+      ratingExp:  r.rating_expertise as number | null,
+      ratingVal:  r.rating_value as number | null,
+      ratingResp: r.rating_responsiveness as number | null,
     }
   })
 
@@ -210,9 +234,7 @@ export default async function LawyerProfilePage({
 
                   <div className="flex gap-2">
                     <FavoriteButton lawyerProfileId={lp.id} />
-                    <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors" title="Compartir">
-                      <Share2 className="h-4 w-4 text-slate-500" />
-                    </button>
+                    <ShareButton name={fullName} />
                   </div>
                 </div>
 
@@ -243,10 +265,17 @@ export default async function LawyerProfilePage({
                 <MessageSquare className="h-4 w-4" />
                 Enviar mensaje
               </Link>
-              <button className="flex-1 sm:flex-none h-11 px-6 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
-                <Video className="h-4 w-4" />
-                Solicitar videollamada
-              </button>
+              {(lp as any).videocall_link ? (
+                <a
+                  href={(lp as any).videocall_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none h-11 px-6 border border-blue-200 hover:bg-blue-50 text-blue-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Video className="h-4 w-4" />
+                  Solicitar videollamada
+                </a>
+              ) : null}
             </div>
           </div>
         </div>
@@ -374,6 +403,25 @@ export default async function LawyerProfilePage({
                         </div>
                         {review.title && <p className="text-sm font-medium text-slate-800 mb-1">{review.title}</p>}
                         <p className="text-sm text-slate-600 leading-relaxed">{review.comment}</p>
+                        {(review.ratingComm || review.ratingExp || review.ratingVal || review.ratingResp) && (
+                          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                            {[
+                              { label: 'Comunicación', val: review.ratingComm },
+                              { label: 'Conocimiento', val: review.ratingExp },
+                              { label: 'Precio/calidad', val: review.ratingVal },
+                              { label: 'Tiempo de resp.', val: review.ratingResp },
+                            ].filter(x => x.val).map(({ label, val }) => (
+                              <div key={label} className="flex items-center gap-1.5">
+                                <span className="text-xs text-slate-400 w-24 shrink-0">{label}</span>
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4,5].map(s => (
+                                    <Star key={s} className={`h-3 w-3 ${s <= (val ?? 0) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -384,6 +432,39 @@ export default async function LawyerProfilePage({
                   </div>
                 )}
               </Section>
+              {/* Artículos */}
+              {articles.length > 0 && (
+                <Section title="Artículos" icon={BookOpen}>
+                  <div className="space-y-4">
+                    {articles.map(a => (
+                      <a
+                        key={a.id}
+                        href={`/blog/${a.slug}`}
+                        className="block group"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {a.category && (
+                              <span className="text-xs font-medium text-blue-600 mb-1 block">{a.category}</span>
+                            )}
+                            <h4 className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                              {a.title}
+                            </h4>
+                            {a.excerpt && (
+                              <p className="text-xs text-slate-400 mt-1 line-clamp-2">{a.excerpt}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+                              <span>{a.publishedAt}</span>
+                              {a.readingTime && <span>{a.readingTime} min de lectura</span>}
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 shrink-0 mt-0.5 transition-colors" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </Section>
+              )}
             </div>
 
             {/* Right column — sidebar */}
