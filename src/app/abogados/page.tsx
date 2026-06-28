@@ -91,6 +91,9 @@ function LawyersContent() {
   const [showFilters, setShowFilters]   = useState(false)
   const [onlyVerified, setOnlyVerified] = useState(false)
   const [onlyAccepting, setOnlyAccepting] = useState(false)
+  const [minRating, setMinRating]       = useState(0)
+  const [maxResponse, setMaxResponse]   = useState(0)
+  const [dbCategories, setDbCategories] = useState<Array<{ slug: string; name: string }>>([])
 
   // ── Detectar rol ──
   useEffect(() => {
@@ -109,6 +112,15 @@ function LawyersContent() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
+      // Load categories dynamically
+      const { data: catData } = await supabase
+        .from('legal_categories')
+        .select('slug, name')
+        .order('name')
+      if (catData) {
+        setDbCategories([{ slug: 'todos', name: 'Todos' }, ...catData.map((c: any) => ({ slug: c.slug, name: c.name }))])
+      }
+
       const { data, error } = await supabase
         .from('lawyer_profiles')
         .select(`
@@ -197,6 +209,8 @@ function LawyersContent() {
 
     if (onlyVerified)  list = list.filter(l => l.verified)
     if (onlyAccepting) list = list.filter(l => l.accepts)
+    if (minRating > 0) list = list.filter(l => l.rating >= minRating)
+    if (maxResponse > 0) list = list.filter(l => l.response_time > 0 && l.response_time <= maxResponse)
 
     list.sort((a, b) => {
       // Plan/featured es siempre prioritario
@@ -213,16 +227,17 @@ function LawyersContent() {
     })
 
     return list
-  }, [lawyers, query, category, province, sort, onlyVerified, onlyAccepting])
+  }, [lawyers, query, category, province, sort, onlyVerified, onlyAccepting, minRating, maxResponse])
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  const hasActiveFilters = query || category !== 'todos' || province || onlyVerified || onlyAccepting
+  const hasActiveFilters = query || category !== 'todos' || province || onlyVerified || onlyAccepting || minRating > 0 || maxResponse > 0
 
   function clearFilters() {
     setQuery(''); setCategory('todos'); setProvince('')
-    setOnlyVerified(false); setOnlyAccepting(false); setPage(1)
+    setOnlyVerified(false); setOnlyAccepting(false)
+    setMinRating(0); setMaxResponse(0); setPage(1)
   }
 
   return (
@@ -290,6 +305,32 @@ function LawyersContent() {
                   <input type="checkbox" checked={onlyAccepting} onChange={e => { setOnlyAccepting(e.target.checked); setPage(1) }} className="accent-blue-600" />
                   Acepta nuevos clientes
                 </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-slate-700">Rating mínimo:</label>
+                  <select
+                    value={minRating}
+                    onChange={e => { setMinRating(Number(e.target.value)); setPage(1) }}
+                    className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white outline-none"
+                  >
+                    <option value={0}>Cualquiera</option>
+                    <option value={3}>3+ ★</option>
+                    <option value={4}>4+ ★</option>
+                    <option value={4.5}>4.5+ ★</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-slate-700">Responde en:</label>
+                  <select
+                    value={maxResponse}
+                    onChange={e => { setMaxResponse(Number(e.target.value)); setPage(1) }}
+                    className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white outline-none"
+                  >
+                    <option value={0}>Cualquier tiempo</option>
+                    <option value={24}>Menos de 24h</option>
+                    <option value={48}>Menos de 48h</option>
+                    <option value={72}>Menos de 72h</option>
+                  </select>
+                </div>
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="ml-auto text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
                     <X className="h-3.5 w-3.5" /> Limpiar filtros
@@ -299,7 +340,7 @@ function LawyersContent() {
             )}
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-              {CATEGORIES.map(({ slug, name }) => (
+              {(dbCategories.length > 0 ? dbCategories : CATEGORIES).map(({ slug, name }) => (
                 <button
                   key={slug}
                   onClick={() => { setCategory(slug); setPage(1) }}
@@ -511,7 +552,7 @@ function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
             Ver perfil <ArrowRight className="h-3.5 w-3.5" />
           </Link>
           <Link
-            href={`/dashboard/mensajes`}
+            href={`/abogados/${lawyer.slug}`}
             className="h-9 px-3 border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-600 transition-colors flex items-center"
           >
             Contactar
