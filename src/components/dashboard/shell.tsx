@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, FileText, MessageSquare, User,
   Search, Star, LogOut, Settings,
-  Briefcase, BarChart2, BookOpen, Shield, CreditCard,
+  Briefcase, BarChart2, BookOpen, Shield, CreditCard, CheckCircle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -20,6 +20,7 @@ const CLIENT_NAV = [
 
 const LAWYER_NAV = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/onboarding', label: 'Completar perfil', icon: CheckCircle },
   { href: '/dashboard/casos-disponibles', label: 'Casos disponibles', icon: Search },
   { href: '/dashboard/mis-propuestas', label: 'Mis propuestas', icon: Briefcase },
   { href: '/dashboard/mis-articulos', label: 'Mis articulos', icon: BookOpen },

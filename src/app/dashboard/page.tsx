@@ -32,6 +32,17 @@ export default async function DashboardHome() {
   const { data: profileData } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   const isLawyer = profileData?.role === 'lawyer' || profileData?.role === 'firm_admin'
 
+  // Onboarding status for lawyers
+  let onboardingDone = true
+  if (isLawyer) {
+    const { data: lp } = await supabase.from('lawyer_profiles').select('id, videocall_link, verification_status').eq('user_id', user.id).maybeSingle()
+    const { data: prof } = await supabase.from('profiles').select('bio, city').eq('id', user.id).single()
+    const { count: specCount } = await supabase.from('lawyer_specialties').select('*', { count: 'exact', head: true }).eq('lawyer_id', lp?.id ?? '')
+    const hasProfile = !!(prof?.bio && prof?.city)
+    const hasSpecialties = (specCount ?? 0) > 0
+    onboardingDone = hasProfile && hasSpecialties
+  }
+
   const [
     { count: casesCount },
     { count: proposalsCount },
@@ -140,6 +151,21 @@ export default async function DashboardHome() {
 
   return (
     <div className="space-y-6">
+      {isLawyer && !onboardingDone && (
+        <div className="bg-blue-600 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-white text-sm">Completá tu perfil para aparecer en los resultados</p>
+            <p className="text-blue-100 text-xs mt-0.5">Te faltan algunos pasos para que los clientes puedan encontrarte.</p>
+          </div>
+          <a
+            href="/dashboard/onboarding"
+            className="shrink-0 px-4 py-2 bg-white text-blue-700 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-colors"
+          >
+            Ver pasos pendientes
+          </a>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Mi panel</h1>
         <p className="text-sm text-slate-500 mt-0.5">
