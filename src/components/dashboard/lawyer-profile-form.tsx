@@ -48,6 +48,7 @@ export type LawyerProfileData = {
   graduation_year: number | null
   response_time_hours: number | null
   accepts_new_clients: boolean | null
+  videocall_link: string | null
   specialties: Array<{ category_id: string; is_primary: boolean; years_experience: number | null }>
 }
 
@@ -67,6 +68,7 @@ export default function LawyerProfileForm({
     graduation_year: lawyerProfile?.graduation_year?.toString() ?? '',
     response_time_hours: lawyerProfile?.response_time_hours ?? 24,
     accepts_new_clients: lawyerProfile?.accepts_new_clients ?? true,
+    videocall_link: lawyerProfile?.videocall_link ?? '',
   })
 
   const [selectedSpecialties, setSelectedSpecialties] = useState<
@@ -129,6 +131,7 @@ export default function LawyerProfileForm({
         graduation_year: form.graduation_year ? Number(form.graduation_year) : null,
         response_time_hours: form.response_time_hours || null,
         accepts_new_clients: form.accepts_new_clients,
+        videocall_link: form.videocall_link.trim() || null,
         specialties: Array.from(selectedSpecialties.entries()).map(([category_id, val]) => ({
           category_id,
           is_primary: val.is_primary,
@@ -307,6 +310,26 @@ export default function LawyerProfileForm({
               }`}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Videollamada */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-700">Videollamada</h3>
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Link de videollamada (Zoom, Google Meet, Calendly, etc.)
+          </label>
+          <input
+            type="url"
+            value={form.videocall_link}
+            onChange={(e) => setForm((f) => ({ ...f, videocall_link: e.target.value }))}
+            placeholder="https://meet.google.com/abc-xyz o https://calendly.com/tu-nombre"
+            className="w-full h-10 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none px-3 text-sm text-slate-900 bg-white transition-all"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Este link aparecerá en el chat con tus clientes para iniciar videollamadas.
+          </p>
         </div>
       </div>
 

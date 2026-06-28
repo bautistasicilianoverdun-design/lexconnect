@@ -15,6 +15,7 @@ type Conversation = {
   unreadCount: number
   otherUnread: number
   isClient: boolean
+  videocallLink: string | null
 }
 
 type Message = {
@@ -84,9 +85,22 @@ export default function MensajesPage() {
         .eq('is_archived', false)
         .order('last_message_at', { ascending: false, nullsFirst: false })
 
-      const convs: Conversation[] = (data ?? []).map((row: any) => {
+      const convs: Conversation[] = await Promise.all((data ?? []).map(async (row: any) => {
         const isClient = row.client?.id === user.id
+        const lawyerId = row.lawyer?.id ?? null
         const otherPerson: Profile = isClient ? row.lawyer : row.client
+
+        // Fetch lawyer videocall link
+        let videocallLink: string | null = null
+        if (lawyerId) {
+          const { data: lp } = await supabase
+            .from('lawyer_profiles')
+            .select('videocall_link')
+            .eq('user_id', lawyerId)
+            .maybeSingle()
+          videocallLink = (lp as any)?.videocall_link ?? null
+        }
+
         return {
           id: row.id,
           otherPerson: otherPerson ?? { id: '', full_name: 'Usuario' },
@@ -95,8 +109,9 @@ export default function MensajesPage() {
           unreadCount: isClient ? (row.client_unread ?? 0) : (row.lawyer_unread ?? 0),
           otherUnread: isClient ? (row.lawyer_unread ?? 0) : (row.client_unread ?? 0),
           isClient,
+          videocallLink,
         }
-      })
+      }))
 
       // If a specific conv was requested and it's not in the list
       // (e.g. brand-new conversation with no messages), fetch it separately
@@ -115,7 +130,17 @@ export default function MensajesPage() {
 
         if (single) {
           const isClient = (single as any).client?.id === user.id
+          const lawyerId2 = (single as any).lawyer?.id ?? null
           const otherPerson: Profile = isClient ? (single as any).lawyer : (single as any).client
+          let videocallLink2: string | null = null
+          if (lawyerId2) {
+            const { data: lp2 } = await supabase
+              .from('lawyer_profiles')
+              .select('videocall_link')
+              .eq('user_id', lawyerId2)
+              .maybeSingle()
+            videocallLink2 = (lp2 as any)?.videocall_link ?? null
+          }
           const newConv: Conversation = {
             id: single.id,
             otherPerson: otherPerson ?? { id: '', full_name: 'Usuario' },
@@ -124,6 +149,7 @@ export default function MensajesPage() {
             unreadCount: isClient ? (single.client_unread ?? 0) : (single.lawyer_unread ?? 0),
             otherUnread: isClient ? (single.lawyer_unread ?? 0) : (single.client_unread ?? 0),
             isClient,
+            videocallLink: videocallLink2,
           }
           finalConvs = [newConv, ...convs]
         }
@@ -406,9 +432,25 @@ export default function MensajesPage() {
               <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
                 <Phone className="h-4 w-4" />
               </button>
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
-                <Video className="h-4 w-4" />
-              </button>
+              {activeConv.videocallLink ? (
+                <a
+                  href={activeConv.videocallLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Iniciar videollamada"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700"
+                >
+                  <Video className="h-4 w-4" />
+                </a>
+              ) : (
+                <button
+                  title="El abogado aun no configuro su link de videollamada"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors text-slate-200 cursor-not-allowed"
+                  disabled
+                >
+                  <Video className="h-4 w-4" />
+                </button>
+              )}
               <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
                 <MoreVertical className="h-4 w-4" />
               </button>

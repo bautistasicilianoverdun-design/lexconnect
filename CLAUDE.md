@@ -169,22 +169,94 @@ OPENAI_API_KEY  (para clasificación de casos)
 - Sistema de propuestas de abogados
 - Chat en tiempo real (Supabase Realtime con optimistic updates)
 - Dashboard: estadísticas, mis casos, casos disponibles, favoritos, perfil, configuración
+- Dashboard inicio diferenciado por rol (abogado vs cliente)
 - Asistente IA para consultas legales
 - Clasificación automática de casos con OpenAI
 - Componente FavoriteButton
 - Estudios jurídicos (listado y detalle)
 - Página de precios y cómo funciona
 - Deploy en Vercel
+- Notificaciones en tiempo real (Supabase Realtime — tabla `notifications` en publicación `supabase_realtime`)
+- Página mis-propuestas (dashboard del abogado — ve sus propuestas enviadas con estado)
+- Panel de administración (`/dashboard/admin`) con 4 secciones: estadísticas, usuarios, casos, suscripciones
+- Verificación de matrícula (`/dashboard/verificacion`): ~45 colegios de abogados argentinos, CPACF automático, resto manual
+- Upload de documentos a casos (`case_documents` table + Storage bucket `case-documents`)
+  - Componente `CaseDocumentsSection` integrado en mis-casos y detalle de caso
+- Sistema de valoraciones mutuas (`/dashboard/valoraciones`):
+  - Cliente valora abogado, abogado valora cliente
+  - Se revelan cuando ambos valoran, o automáticamente a los 7 días
+  - Bloqueo permanente tras revelación
+  - SQL: `supabase-reviews-migration.sql` (columnas + RPC functions)
+  - Funciones PostgreSQL: `reveal_mutual_reviews(p_case_id)` y `lock_expired_reviews()`
+- Integración MercadoPago para suscripciones de abogados (`/api/mercadopago/`, `/dashboard/suscripcion`)
+- Blog / artículos de abogados (implementado)
+- Link de videollamada del abogado (Zoom/Meet/Calendly):
+  - Abogado configura su link en `/dashboard/perfil` → campo "Videollamada"
+  - Botón Video en el chat abre el link en nueva pestaña (azul si hay link, gris si no)
+  - SQL pendiente: `ALTER TABLE lawyer_profiles ADD COLUMN IF NOT EXISTS videocall_link TEXT;`
 
 ### 🚧 Pendiente / En construcción
-- Integración de pagos (Stripe y/o MercadoPago) para suscripciones de abogados
-- Página de mis-propuestas (dashboard del abogado)
-- Sistema de notificaciones en tiempo real
-- Videollamadas integradas
-- Blog / artículos de abogados
-- Panel de administración
-- Verificación de matrícula de abogados
-- Upload de documentos a casos
+- Cargar credenciales reales de MercadoPago en Vercel env vars
+- Configurar webhook MP: `https://lexconnect-two.vercel.app/api/mercadopago/webhook`
+- Cambiar rol a `admin` en Supabase para probar panel admin
+- Perfil público del abogado mejorado (valoraciones públicas, estadísticas)
+- Videollamadas nativas integradas (WebRTC / Daily.co) — fase 2
+- Panel de administración: gestión de casos y suscripciones (completar)
+- Verificación de matrícula: revisor manual en panel admin
+
+---
+
+## Columnas agregadas a tablas existentes (migraciones aplicadas)
+
+| Tabla | Columna | Tipo | Notas |
+|-------|---------|------|-------|
+| `lawyer_profiles` | `bar_association` | TEXT | Colegio de abogados |
+| `lawyer_profiles` | `matricula_tomo` | TEXT | |
+| `lawyer_profiles` | `matricula_folio` | TEXT | |
+| `lawyer_profiles` | `verification_status` | TEXT | pending/verified/rejected/suspended |
+| `lawyer_profiles` | `verification_submitted_at` | TIMESTAMPTZ | |
+| `lawyer_profiles` | `verification_notes` | TEXT | |
+| `lawyer_profiles` | `videocall_link` | TEXT | SQL pendiente: `ALTER TABLE lawyer_profiles ADD COLUMN IF NOT EXISTS videocall_link TEXT;` |
+| `reviews` | `reviewer_role` | TEXT | 'client' \| 'lawyer' |
+| `reviews` | `reviewee_id` | UUID | FK auth.users |
+| `reviews` | `is_revealed` | BOOLEAN | default false |
+| `reviews` | `revealed_at` | TIMESTAMPTZ | |
+| `reviews` | `reveal_deadline` | TIMESTAMPTZ | 7 días tras cierre |
+| `reviews` | `is_locked` | BOOLEAN | default false |
+| `subscriptions` | múltiples | — | Ver `supabase-subscriptions-migration.sql` |
+
+---
+
+## Archivos SQL de migración (aplicar en Supabase SQL Editor)
+
+- `supabase-reviews-migration.sql` — columnas reviews + RPC functions + RLS
+- `supabase-subscriptions-migration.sql` — tabla subscriptions + columnas MP en lawyer_profiles
+- `supabase-case-documents-migration.sql` — tabla case_documents (si existe)
+- SQL inline: `ALTER TABLE lawyer_profiles ADD COLUMN IF NOT EXISTS videocall_link TEXT;` — **PENDIENTE**
+
+---
+
+## Reglas de desarrollo CRÍTICAS
+
+> **NUNCA usar Edit tool en archivos .tsx/.ts grandes** — trunca el archivo en Windows mount.
+> Siempre usar bash heredoc o Python read-full-file → modify in memory → write-full-file.
+
+```bash
+# Patrón seguro para modificar TSX:
+python3 - << 'PYEOF'
+with open('/path/to/file.tsx', 'r', encoding='utf-8') as f:
+    content = f.read()
+content = content.replace(OLD, NEW)
+with open('/path/to/file.tsx', 'w', encoding='utf-8') as f:
+    f.write(content)
+PYEOF
+```
+
+- **git**: rama `master` (no `main`). Usar `git add -A` (Windows interpreta `[id]` como glob).
+- **git index.lock**: si aparece, el usuario lo elimina desde Windows terminal.
+- **Supabase joins**: devuelven arrays → siempre `Array.isArray(data) ? data[0] : data`.
+- **Supabase Realtime**: las tablas deben estar explícitamente en la publicación `supabase_realtime` (Database → Publications → supabase_realtime → toggle).
+- **Dev server**: corre en puerto `3001` (`npm run dev`).
 
 ---
 

@@ -1,12 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createHmac } from 'crypto'
 
 // MercadoPago envia notificaciones a este endpoint
 // Documentacion: https://www.mercadopago.com.ar/developers/es/docs/notifications/webhooks
 
+/**
+ * Valida la firma HMAC-SHA256 del webhook de MercadoPago.
+ * Header x-signature formato: "ts=<timestamp>,v1=<hmac>"
+ * Manifest a firmar: "id:<data.id>;request-id:<x-request-id>;ts:<ts>;"
+ * Docs: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks#bookmark_validar_origin_de_las_notificaciones
+ */
+function validateMPSignature(
+  req: NextRequest,
+  rawBody: string
+): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET
+  if (!secret) {
+    console.warn('[MP Webhook] MP_WEBHOOK_SECRET no configurado — validación omitida')
+    return true
+  }
+
+  const xSignature = req.headers.get('x-signature')
+  const xRequestId = req.headers.get('x-request-id') ?? ''
+
+  if (!xSignature) return false
+
+  const parts: Record<string, string> = {}
+  xSignature.split(',').forEach(part => {
+    const [k, v] = part.split('=')
+    if (k && v) parts[k.trim()] = v.trim()
+  })
+
+  const ts = parts['ts']
+  const v1 = parts['v1']
+  if (!ts || !v1) return false
+
+  let parsedBody: { data?: { id?: string } } = {}
+  try { parsedBody = JSON.parse(rawBody) } catch { return false }
+
+  const manifest = `id:${parsedBody?.data?.id ?? ''};request-id:${xRequestId};ts:${ts};`
+
+  const expected = createHmac('sha256', secret).update(manifest).digest('hex')
+
+  return v1 === expected
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await req.json()
+    const rawBody = await req.text()
+
+    if (!validateMPSignature(req, rawBody)) {
+      console.warn('[MP Webhook] Firma inválida — request rechazado')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = JSON.parse(rawBody)
     const { type, data } = body
 
     // Solo procesamos pagos aprobados

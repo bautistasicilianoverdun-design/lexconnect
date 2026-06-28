@@ -86,7 +86,7 @@ export default async function PerfilPage() {
     const [{ data: lp }, { data: cats }] = await Promise.all([
       supabase
         .from('lawyer_profiles')
-        .select('id, license_number, license_province_id, university, graduation_year, response_time_hours, accepts_new_clients, lawyer_specialties(category_id, is_primary, years_experience)')
+        .select('id, license_number, license_province_id, university, graduation_year, response_time_hours, accepts_new_clients, videocall_link, lawyer_specialties(category_id, is_primary, years_experience)')
         .eq('user_id', user.id)
         .maybeSingle(),
       supabase
@@ -106,6 +106,7 @@ export default async function PerfilPage() {
         graduation_year: lp.graduation_year ?? null,
         response_time_hours: lp.response_time_hours ?? null,
         accepts_new_clients: lp.accepts_new_clients ?? true,
+        videocall_link: (lp as any).videocall_link ?? null,
         specialties,
       }
     }

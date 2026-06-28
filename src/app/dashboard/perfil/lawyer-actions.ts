@@ -9,6 +9,7 @@ export type LawyerProfilePayload = {
   graduation_year: number | null
   response_time_hours: number | null
   accepts_new_clients: boolean
+  videocall_link: string | null
   specialties: Array<{ category_id: string; is_primary: boolean; years_experience: number | null }>
 }
 
@@ -29,6 +30,7 @@ export async function saveLawyerProfile(
       graduation_year: payload.graduation_year || null,
       response_time_hours: payload.response_time_hours || null,
       accepts_new_clients: payload.accepts_new_clients,
+      videocall_link: payload.videocall_link ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', user.id)
