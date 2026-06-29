@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { AdminVerificationTable } from '@/components/dashboard/admin-verification-table'
 import { AdminUsersTable } from '@/components/dashboard/admin-users-table'
 import { AdminCasesTable } from '@/components/dashboard/admin-cases-table'
@@ -46,9 +47,9 @@ export default async function AdminPage() {
     `).in('verification_status', ['pending', 'rejected', 'verified'])
       .order('verification_submitted_at', { ascending: false, nullsFirst: false })
       .limit(100),
-    supabase.from('profiles').select('id, full_name, role, created_at')
+    supabase.from('profiles').select('id, full_name, role, city, suspended, created_at')
       .order('created_at', { ascending: false })
-      .limit(50),
+      .limit(100),
     supabase.from('legal_cases').select(`
       id, title, status, urgency, created_at, proposals_count, views_count,
       legal_categories!category_id(name),
@@ -59,6 +60,17 @@ export default async function AdminPage() {
       profiles!user_id(full_name)
     `).order('created_at', { ascending: false }).limit(50),
   ])
+
+  // Fetch emails via admin client (service role)
+  let userEmails: Record<string, string> = {}
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (serviceKey) {
+    try {
+      const adminClient = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
+      const { data: authUsers } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+      userEmails = Object.fromEntries((authUsers?.users ?? []).map(u => [u.id, u.email ?? '']))
+    } catch {}
+  }
 
   const pendingVerif = verifications?.filter(v => v.verification_status === 'pending').length ?? 0
   const verifiedVerif = verifications?.filter(v => v.verification_status === 'verified').length ?? 0
@@ -113,7 +125,7 @@ export default async function AdminPage() {
       {/* Usuarios */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Usuarios recientes</h2>
-        <AdminUsersTable users={users ?? []} />
+        <AdminUsersTable users={(users ?? []).map(u => ({ ...u, email: userEmails[u.id] ?? '' }))} />
       </div>
 
       {/* Casos */}

@@ -63,3 +63,43 @@ export async function updateVerificationStatus(
   revalidatePath('/dashboard/admin')
   return { success: true }
 }
+
+export async function setUserSuspended(
+  userId: string,
+  suspended: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'No autenticado' }
+  const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (p?.role !== 'admin') return { success: false, error: 'Sin permisos' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ suspended })
+    .eq('id', userId)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/admin')
+  return { success: true }
+}
+
+export async function setUserRole(
+  userId: string,
+  role: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'No autenticado' }
+  const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (p?.role !== 'admin') return { success: false, error: 'Sin permisos' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', userId)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/admin')
+  return { success: true }
+}
