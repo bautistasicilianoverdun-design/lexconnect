@@ -4,25 +4,14 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import {
   FileText, MapPin, Clock, ChevronRight, Plus, Search,
-  AlertCircle, Eye, MessageSquare,
+  AlertCircle, Eye, MessageSquare, ChevronLeft,
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const CATEGORIES = [
-  { slug: 'todos',       name: 'Todos' },
-  { slug: 'laboral',     name: 'Laboral' },
-  { slug: 'civil',       name: 'Civil' },
-  { slug: 'penal',       name: 'Penal' },
-  { slug: 'comercial',   name: 'Comercial' },
-  { slug: 'familia',     name: 'Familia' },
-  { slug: 'inmobiliario',name: 'Inmobiliario' },
-  { slug: 'tributario',  name: 'Tributario' },
-  { slug: 'consumidor',  name: 'Consumidor' },
-  { slug: 'transito',    name: 'Tránsito' },
-]
+const PAGE_SIZE = 12
 
 const URGENCY_STYLES: Record<string, string> = {
   urgent: 'bg-red-100 text-red-700',
@@ -33,6 +22,7 @@ const URGENCY_STYLES: Record<string, string> = {
 const URGENCY_LABELS: Record<string, string> = {
   urgent: 'Urgente', high: 'Alta', medium: 'Media', low: 'Baja',
 }
+const URGENCY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()
@@ -58,19 +48,23 @@ type Case = {
   province: string
 }
 
-const URGENCY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
+type Category = { slug: string; name: string }
 
 function CasosContent() {
   const searchParams = useSearchParams()
-  const [cases, setCases]     = useState<Case[]>([])
-  const [loading, setLoading] = useState(true)
-  const [query, setQuery]     = useState(searchParams.get('q') ?? '')
-  const [category, setCategory] = useState(searchParams.get('categoria') ?? 'todos')
-  const [sortBy, setSortBy]   = useState('recent')
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const [cases, setCases]         = useState<Case[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [query, setQuery]         = useState(searchParams.get('q') ?? '')
+  const [category, setCategory]   = useState(searchParams.get('categoria') ?? 'todos')
+  const [province, setProvince]   = useState('todas')
+  const [urgency, setUrgency]     = useState('todas')
+  const [sortBy, setSortBy]       = useState('recent')
+  const [page, setPage]           = useState(1)
+  const [userRole, setUserRole]   = useState<string | null>(null)
   const [roleLoaded, setRoleLoaded] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([{ slug: 'todos', name: 'Todos' }])
+  const [provinces, setProvinces] = useState<string[]>([])
 
-  // Sync URL params when they change
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
     setCategory(searchParams.get('categoria') ?? 'todos')
@@ -82,29 +76,40 @@ function CasosContent() {
 
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle()
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
         setUserRole(profile?.role ?? null)
       }
       setRoleLoaded(true)
 
-      const { data } = await supabase
-        .from('legal_cases')
-        .select(`
-          id, title, description, urgency, views_count, proposals_count, created_at,
-          legal_categories!category_id(name, slug),
-          provinces(name)
-        `)
-        .eq('status', 'open')
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(100)
+      const [
+        { data: casesData },
+        { data: catsData },
+        { data: provsData },
+      ] = await Promise.all([
+        supabase
+          .from('legal_cases')
+          .select(`
+            id, title, description, urgency, views_count, proposals_count, created_at,
+            legal_categories!category_id(name, slug),
+            provinces(name)
+          `)
+          .eq('status', 'open')
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false })
+          .limit(500),
+        supabase.from('legal_categories').select('name, slug').order('name'),
+        supabase.from('provinces').select('name').order('name'),
+      ])
+
+      if (catsData) {
+        setCategories([{ slug: 'todos', name: 'Todos' }, ...catsData.map(c => ({ slug: c.slug, name: c.name }))])
+      }
+      if (provsData) {
+        setProvinces(provsData.map(p => p.name))
+      }
 
       setCases(
-        (data ?? []).map((c) => {
+        (casesData ?? []).map((c) => {
           const cat  = (Array.isArray(c.legal_categories) ? c.legal_categories[0] : c.legal_categories) as { name: string; slug: string } | null
           const prov = (Array.isArray(c.provinces) ? c.provinces[0] : c.provinces) as { name: string } | null
           return {
@@ -126,30 +131,41 @@ function CasosContent() {
     load()
   }, [])
 
+  // Reset page when filters change
+  useEffect(() => { setPage(1) }, [query, category, province, urgency, sortBy])
+
   const filtered = useMemo(() => {
     let list = cases
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(
-        (c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.province.toLowerCase().includes(q),
+      list = list.filter(c =>
+        c.title.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.province.toLowerCase().includes(q)
       )
     }
-    if (category !== 'todos') {
-      list = list.filter((c) => c.categorySlug === category)
-    }
+    if (category !== 'todos') list = list.filter(c => c.categorySlug === category)
+    if (province !== 'todas') list = list.filter(c => c.province === province)
+    if (urgency !== 'todas') list = list.filter(c => c.urgency === urgency)
     switch (sortBy) {
       case 'urgent':    return [...list].sort((a, b) => (URGENCY_ORDER[a.urgency] ?? 4) - (URGENCY_ORDER[b.urgency] ?? 4))
       case 'proposals': return [...list].sort((a, b) => b.proposals_count - a.proposals_count)
       case 'views':     return [...list].sort((a, b) => b.views_count - a.views_count)
       default:          return list
     }
-  }, [cases, query, category, sortBy])
+  }, [cases, query, category, province, urgency, sortBy])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const isLawyer = userRole === 'lawyer' || userRole === 'firm_admin'
 
   return (
     <div className="flex flex-col min-h-full">
       <Header user={null} />
       <main className="flex-1 bg-slate-50">
 
+        {/* Header + filtros */}
         <div className="bg-white border-b border-slate-200 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-6">
@@ -157,7 +173,7 @@ function CasosContent() {
                 <h1 className="text-2xl font-bold text-slate-900">Casos legales publicados</h1>
                 <p className="text-sm text-slate-500 mt-1">Personas buscando asesoramiento legal en Argentina</p>
               </div>
-              {roleLoaded && userRole !== 'lawyer' && userRole !== 'firm_admin' && (
+              {roleLoaded && !isLawyer && (
                 <Link
                   href="/casos/nuevo"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
@@ -167,6 +183,7 @@ function CasosContent() {
               )}
             </div>
 
+            {/* Búsqueda + filtros secundarios */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 flex items-center gap-3 h-11 rounded-lg border border-slate-200 bg-white px-4 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 <Search className="h-4 w-4 text-slate-400 shrink-0" />
@@ -174,21 +191,39 @@ function CasosContent() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar casos por título, descripción o provincia..."
+                  placeholder="Buscar casos..."
                   className="flex-1 text-sm outline-none placeholder:text-slate-400"
                 />
               </div>
+              <select
+                value={province}
+                onChange={e => setProvince(e.target.value)}
+                className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-blue-500"
+              >
+                <option value="todas">Todas las provincias</option>
+                {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select
+                value={urgency}
+                onChange={e => setUrgency(e.target.value)}
+                className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-blue-500"
+              >
+                <option value="todas">Cualquier urgencia</option>
+                <option value="urgent">Urgente</option>
+                <option value="high">Alta</option>
+                <option value="medium">Media</option>
+                <option value="low">Baja</option>
+              </select>
             </div>
 
+            {/* Categorías */}
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {CATEGORIES.map(({ slug, name }) => (
+              {categories.map(({ slug, name }) => (
                 <button
                   key={slug}
                   onClick={() => setCategory(slug)}
                   className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    category === slug
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    category === slug ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {name}
@@ -199,30 +234,29 @@ function CasosContent() {
         </div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          {roleLoaded && ((userRole === 'lawyer' || userRole === 'firm_admin') ? (
+
+          {/* Banner rol */}
+          {roleLoaded && (isLawyer ? (
             <div className="mb-6 flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
               <AlertCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-green-800 font-medium">Estás viendo como abogado</p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  Hacé clic en "Ver caso" o "Proponer" para ver el detalle y enviar tu propuesta.
-                </p>
-              </div>
+              <p className="text-sm text-green-800">
+                <span className="font-medium">Estás viendo como abogado.</span>{' '}
+                Hacé clic en &quot;Ver caso&quot; para ver el detalle y enviar tu propuesta.
+              </p>
             </div>
           ) : (
             <div className="mb-6 flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
               <AlertCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-blue-800 font-medium">¿Sos abogado?</p>
-                <p className="text-xs text-blue-700 mt-0.5">
-                  Para enviar propuestas necesitás{' '}
-                  <Link href="/registro?rol=abogado" className="underline font-medium">crear tu perfil</Link>{' '}
-                  o <Link href="/iniciar-sesion" className="underline font-medium">iniciar sesión</Link>.
-                </p>
-              </div>
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">¿Sos abogado?</span>{' '}
+                Para enviar propuestas necesitás{' '}
+                <Link href="/registro?rol=abogado" className="underline font-medium">crear tu perfil</Link>{' '}
+                o <Link href="/iniciar-sesion" className="underline font-medium">iniciar sesión</Link>.
+              </p>
             </div>
           ))}
 
+          {/* Contador + orden */}
           <div className="flex items-center justify-between mb-5">
             {loading ? (
               <p className="text-sm text-slate-400">Cargando casos...</p>
@@ -243,6 +277,7 @@ function CasosContent() {
             </select>
           </div>
 
+          {/* Lista */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <svg className="animate-spin h-6 w-6 text-blue-600" viewBox="0 0 24 24" fill="none">
@@ -250,19 +285,19 @@ function CasosContent() {
                 <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
               </svg>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : paginated.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
               <FileText className="h-10 w-10 mx-auto text-slate-200 mb-3" />
               <p className="font-semibold text-slate-700">
-                {cases.length === 0 ? 'No encontramos casos' : 'No hay casos que coincidan con tu búsqueda'}
+                {cases.length === 0 ? 'No hay casos registrados' : 'No hay casos que coincidan con tu búsqueda'}
               </p>
               <p className="text-sm text-slate-400 mt-1">
-                {cases.length === 0 ? 'Todavía no hay casos registrados en la plataforma.' : 'Probá cambiando los filtros o la categoría'}
+                {cases.length > 0 && 'Probá cambiando los filtros o la categoría'}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filtered.map((c) => (
+              {paginated.map((c) => (
                 <div key={c.id} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md transition-shadow">
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 min-w-0">
@@ -293,11 +328,7 @@ function CasosContent() {
                         Ver caso <ChevronRight className="h-3.5 w-3.5" />
                       </Link>
                       <Link
-                        href={
-                          userRole === 'lawyer' || userRole === 'firm_admin'
-                            ? `/casos/${c.id}`
-                            : '/registro?rol=abogado'
-                        }
+                        href={isLawyer ? `/casos/${c.id}` : '/registro?rol=abogado'}
                         className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-xl transition-colors"
                       >
                         Proponer
@@ -309,7 +340,52 @@ function CasosContent() {
             </div>
           )}
 
-          {roleLoaded && userRole !== 'lawyer' && userRole !== 'firm_admin' && (
+          {/* Paginación */}
+          {!loading && totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" /> Anterior
+              </button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                  .reduce<(number | '...')[]>((acc, n, idx, arr) => {
+                    if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push('...')
+                    acc.push(n)
+                    return acc
+                  }, [])
+                  .map((n, i) =>
+                    n === '...' ? (
+                      <span key={`dots-${i}`} className="px-3 py-2 text-sm text-slate-400">…</span>
+                    ) : (
+                      <button
+                        key={n}
+                        onClick={() => setPage(n as number)}
+                        className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${
+                          page === n ? 'bg-blue-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    )
+                  )}
+              </div>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* CTA clientes */}
+          {roleLoaded && !isLawyer && (
             <div className="mt-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-center text-white">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-80" />
               <h3 className="font-bold text-lg mb-2">¿Tenés un caso legal?</h3>
