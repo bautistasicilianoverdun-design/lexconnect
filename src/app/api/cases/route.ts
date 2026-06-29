@@ -4,12 +4,12 @@ import { z } from 'zod'
 
 const CreateCaseSchema = z.object({
   title: z
-    .string({ required_error: 'El título es requerido' })
+    .string()
     .min(5, 'El título debe tener al menos 5 caracteres')
     .max(200, 'El título no puede exceder 200 caracteres')
     .trim(),
   description: z
-    .string({ required_error: 'La descripción es requerida' })
+    .string()
     .min(20, 'La descripción debe tener al menos 20 caracteres')
     .max(5000, 'La descripción no puede exceder 5000 caracteres')
     .trim(),
