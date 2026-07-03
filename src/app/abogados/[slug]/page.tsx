@@ -156,6 +156,24 @@ export default async function LawyerProfilePage({
     }
   })
 
+  // Promedios de sub-ratings
+  const subRatingAvgs = (() => {
+    const sums  = { comm: 0, exp: 0, val: 0, resp: 0 }
+    const counts = { comm: 0, exp: 0, val: 0, resp: 0 }
+    for (const r of reviews) {
+      if (r.ratingComm != null) { sums.comm += r.ratingComm; counts.comm++ }
+      if (r.ratingExp  != null) { sums.exp  += r.ratingExp;  counts.exp++  }
+      if (r.ratingVal  != null) { sums.val  += r.ratingVal;  counts.val++  }
+      if (r.ratingResp != null) { sums.resp += r.ratingResp; counts.resp++ }
+    }
+    return {
+      comm: counts.comm > 0 ? sums.comm / counts.comm : null,
+      exp:  counts.exp  > 0 ? sums.exp  / counts.exp  : null,
+      val:  counts.val  > 0 ? sums.val  / counts.val  : null,
+      resp: counts.resp > 0 ? sums.resp / counts.resp : null,
+    }
+  })()
+
   const fullName     = profile?.full_name ?? 'Abogado'
   const initials     = getInitials(fullName)
   const isVerified   = lp.verification_status === 'verified'
@@ -362,8 +380,8 @@ export default async function LawyerProfilePage({
               {/* Valoraciones */}
               <Section title={`Valoraciones${lp.rating_count ? ` (${lp.rating_count})` : ''}`} icon={Star}>
                 {rating > 0 ? (
-                  <div className="flex items-center gap-6 p-5 bg-slate-50 rounded-xl mb-6">
-                    <div className="text-center">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-5 bg-slate-50 rounded-xl mb-6">
+                    <div className="text-center shrink-0">
                       <div className="text-4xl font-bold text-slate-900">{rating.toFixed(1)}</div>
                       <div className="flex gap-0.5 mt-1 justify-center">
                         {[1,2,3,4,5].map(s => (
@@ -372,6 +390,31 @@ export default async function LawyerProfilePage({
                       </div>
                       <div className="text-xs text-slate-400 mt-1">{lp.rating_count} reseñas</div>
                     </div>
+                    {(subRatingAvgs.comm || subRatingAvgs.exp || subRatingAvgs.val || subRatingAvgs.resp) && (
+                      <div className="flex-1 grid grid-cols-1 gap-2.5 w-full">
+                        {([
+                          { label: 'Comunicación',   val: subRatingAvgs.comm },
+                          { label: 'Conocimiento',   val: subRatingAvgs.exp  },
+                          { label: 'Precio/calidad', val: subRatingAvgs.val  },
+                          { label: 'Respuesta',      val: subRatingAvgs.resp },
+                        ] as { label: string; val: number | null }[])
+                          .filter(x => x.val != null)
+                          .map(({ label, val }) => (
+                            <div key={label} className="flex items-center gap-3">
+                              <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
+                              <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-amber-400 rounded-full"
+                                  style={{ width: `${((val ?? 0) / 5) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-semibold text-slate-700 w-7 text-right">
+                                {val!.toFixed(1)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 ) : null}
 
