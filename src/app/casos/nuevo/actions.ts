@@ -14,6 +14,7 @@ export async function publishCase(payload: {
   province: string
   urgency: string
   visibility: string
+  preferredLawyerSlug?: string
 }): Promise<PublishResult> {
   const supabase = await createClient()
 
@@ -86,6 +87,25 @@ export async function publishCase(payload: {
           ai_summary:     classification.summary,
         })
         .eq('id', inserted.id)
+    }
+  }
+
+  // Notificar al abogado preferido si se pasó un slug
+  if (inserted?.id && payload.preferredLawyerSlug) {
+    const { data: lp } = await supabase
+      .from('lawyer_profiles')
+      .select('user_id, profiles!user_id(full_name)')
+      .eq('slug', payload.preferredLawyerSlug)
+      .maybeSingle()
+
+    if (lp?.user_id) {
+      await supabase.from('notifications').insert({
+        user_id: lp.user_id,
+        type:    'new_case',
+        title:   'Un cliente te eligió para su caso',
+        body:    `"${payload.title.trim()}" — revisalo en Casos disponibles`,
+        link:    `/casos/${inserted.id}`,
+      })
     }
   }
 

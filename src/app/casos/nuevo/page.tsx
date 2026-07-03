@@ -1,8 +1,10 @@
 'use client'
-import { useState } from 'react'
-import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
+import { createClient } from '@/lib/supabase/client'
 import { publishCase } from './actions'
 
 const CATEGORIES = [
@@ -46,6 +48,26 @@ export default function NewCasePage() {
   const [errorMsg, setErrorMsg]     = useState('')
   const [sensitiveWarning, setSensitiveWarning] = useState(false)
 
+  // Abogado pre-seleccionado desde el perfil público
+  const searchParams = useSearchParams()
+  const preferredSlug = searchParams.get('abogado')
+  const [preferredLawyer, setPreferredLawyer] = useState<{ name: string; slug: string } | null>(null)
+
+  useEffect(() => {
+    if (!preferredSlug) return
+    const supabase = createClient()
+    supabase
+      .from('lawyer_profiles')
+      .select('slug, profiles!user_id(full_name)')
+      .eq('slug', preferredSlug)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return
+        const profile = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles
+        setPreferredLawyer({ name: (profile as any)?.full_name ?? 'Abogado', slug: data.slug })
+      })
+  }, [preferredSlug])
+
   const SENSITIVE = /\b(\d{2}\.?\d{3}\.?\d{3}|\+?54\s?\d{10,11}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+)\b/
 
   function handleDescriptionChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -67,7 +89,7 @@ export default function NewCasePage() {
     setStatus('loading')
 
     try {
-      const result = await publishCase({ title, description, category, province, urgency, visibility })
+      const result = await publishCase({ title, description, category, province, urgency, visibility, preferredLawyerSlug: preferredSlug ?? undefined })
 
       if (!result.success) {
         setErrorMsg(
@@ -142,6 +164,28 @@ export default function NewCasePage() {
               Describí tu situación y recibirás propuestas de abogados especializados
             </p>
           </div>
+
+          {/* Banner abogado pre-seleccionado */}
+          {preferredLawyer && (
+            <div className="mb-6 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shrink-0">
+                <UserCheck className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-900">Caso dirigido a un abogado específico</p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  <span className="font-medium">{preferredLawyer.name}</span> recibirá una notificación cuando publiques este caso.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreferredLawyer(null)}
+                className="text-xs text-blue-500 hover:text-blue-700 shrink-0 underline"
+              >
+                Quitar
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Información del caso */}

@@ -569,7 +569,7 @@ export default async function LawyerProfilePage({
                       </ContactButton>
                       {!isCurrentLawyer && (
                         <Link
-                          href="/casos/nuevo"
+                          href={`/casos/nuevo?abogado=${lp.slug}`}
                           className="w-full h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
                         >
                           <BookOpen className="h-4 w-4" />
