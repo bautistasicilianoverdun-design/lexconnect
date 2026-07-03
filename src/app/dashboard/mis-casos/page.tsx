@@ -44,6 +44,9 @@ export default async function MisCasosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/iniciar-sesion')
 
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role === 'lawyer' || profile?.role === 'firm_admin') redirect('/dashboard')
+
   const { data: cases } = await supabase
     .from('legal_cases')
     .select(`
