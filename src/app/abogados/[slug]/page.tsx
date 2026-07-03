@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { createClient } from '@/lib/supabase/server'
 import FavoriteButton from '@/components/FavoriteButton'
+import { ContactButton } from '@/components/lawyer/ContactButton'
 import { ShareButton } from '@/components/lawyer/ShareButton'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -258,13 +259,12 @@ export default async function LawyerProfilePage({
 
             {/* CTA bar */}
             <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
-              <Link
-                href={`/dashboard/mensajes`}
-                className="flex-1 sm:flex-none h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+              <ContactButton
+                lawyerUserId={profile.id}
+                className="flex-1 sm:flex-none h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
               >
-                <MessageSquare className="h-4 w-4" />
                 Enviar mensaje
-              </Link>
+              </ContactButton>
               {(lp as any).videocall_link ? (
                 <a
                   href={(lp as any).videocall_link}
@@ -518,13 +518,12 @@ export default async function LawyerProfilePage({
                       Acepta nuevos clientes
                     </p>
                     <div className="space-y-2.5">
-                      <Link
-                        href="/dashboard/mensajes"
-                        className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                      <ContactButton
+                        lawyerUserId={profile.id}
+                        className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
                       >
-                        <MessageSquare className="h-4 w-4" />
                         Enviar mensaje
-                      </Link>
+                      </ContactButton>
                       {!isCurrentLawyer && (
                         <Link
                           href="/casos/nuevo"

@@ -53,3 +53,35 @@ export async function toggleFavorite(
   if (error) return { saved: false, error: error.message }
   return { saved: true }
 }
+
+export async function startConversation(
+  lawyerUserId: string,
+): Promise<{ convId: string | null; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { convId: null, error: 'not_authenticated' }
+
+  // No permitir que un abogado se mensajee a sí mismo
+  if (user.id === lawyerUserId) return { convId: null, error: 'self_contact' }
+
+  // Buscar conversación directa existente (sin caso asociado)
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('client_id', user.id)
+    .eq('lawyer_id', lawyerUserId)
+    .is('case_id', null)
+    .maybeSingle()
+
+  if (existing) return { convId: existing.id }
+
+  // Crear nueva conversación
+  const { data: newConv, error } = await supabase
+    .from('conversations')
+    .insert({ client_id: user.id, lawyer_id: lawyerUserId })
+    .select('id')
+    .single()
+
+  if (error) return { convId: null, error: error.message }
+  return { convId: newConv.id }
+}
