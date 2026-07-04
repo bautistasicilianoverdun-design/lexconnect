@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { FileText, Upload, Shield, Sparkles, ChevronRight, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react'
 import Link from 'next/link'
@@ -37,7 +37,7 @@ const URGENCIES = [
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-export default function NewCasePage() {
+function NewCasePageInner() {
   const [title, setTitle]           = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory]     = useState('')
@@ -398,5 +398,17 @@ export default function NewCasePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function NewCasePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col min-h-screen bg-slate-50 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    }>
+      <NewCasePageInner />
+    </Suspense>
   )
 }
