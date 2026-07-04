@@ -410,7 +410,7 @@ export default function MensajesPage() {
             <p className="text-sm font-medium text-slate-500">Seleccioná una conversación</p>
             <p className="text-xs text-slate-400 mt-1">
               {conversations.length === 0
-                ? 'Las conversaciones aparecen cuando aceptás una propuesta.'
+                ? 'Podés iniciar una conversación desde el perfil de un abogado o cuando aceptes una propuesta.'
                 : 'O elegí una del panel izquierdo.'}
             </p>
           </div>

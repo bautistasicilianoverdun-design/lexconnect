@@ -7,7 +7,7 @@ function timeAgo(date: string) {
   const days = Math.floor(diff / 86400000)
   if (days === 0) return 'Hoy'
   if (days === 1) return 'Ayer'
-  if (days < 30) return `Hace ${days} dias`
+  if (days < 30) return `Hace ${days} días`
   const months = Math.floor(days / 30)
   return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`
 }
@@ -45,7 +45,7 @@ export default async function BlogPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Blog legal</h1>
-              <p className="text-sm text-slate-500">Articulos de abogados especializados</p>
+              <p className="text-sm text-slate-500">Artículos de abogados especializados</p>
             </div>
           </div>
         </div>
@@ -72,8 +72,8 @@ export default async function BlogPage() {
         {!articles || articles.length === 0 ? (
           <div className="text-center py-24">
             <BookOpen className="h-12 w-12 mx-auto text-slate-200 mb-4" />
-            <p className="font-semibold text-slate-700 mb-1">Todavia no hay articulos publicados</p>
-            <p className="text-sm text-slate-400">Los abogados de LexConnect publicaran contenido pronto.</p>
+            <p className="font-semibold text-slate-700 mb-1">Todavía no hay artículos publicados</p>
+            <p className="text-sm text-slate-400">Los abogados de LexConnect publicarán contenido pronto.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -95,6 +95,7 @@ export default function ProfileForm({ profile }: { profile: ProfileData }) {
 
   const avatar = profile.full_name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   const roleLabel = profile.role === 'lawyer' ? 'Abogado' : profile.role === 'firm_admin' ? 'Estudio jurídico' : 'Cliente'
+  const isLawyer = profile.role === 'lawyer' || profile.role === 'firm_admin'
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -117,15 +118,17 @@ export default function ProfileForm({ profile }: { profile: ProfileData }) {
         ))}
       </div>
 
-      <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl p-4">
-        <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-amber-900">Verificá tu identidad</p>
-          <p className="text-xs text-amber-700 mt-0.5">
-            Perfiles verificados generan más confianza. Podés verificar con tu DNI desde la sección de configuración.
-          </p>
+      {isLawyer && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl p-4">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Verificá tu matrícula</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Los perfiles verificados generan más confianza. Podés verificar tu matrícula en la sección de Verificación.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <form onSubmit={save} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         {/* Avatar */}

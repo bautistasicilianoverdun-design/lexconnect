@@ -92,21 +92,21 @@ export default async function DashboardHome() {
         {
           href: '/dashboard/mis-propuestas',
           label: 'Mis propuestas',
-          desc: myProposalsCount ? `${myProposalsCount} propuestas enviadas` : 'Revisa las propuestas que enviaste',
+          desc: myProposalsCount ? `${myProposalsCount} propuestas enviadas` : 'Revisá las propuestas que enviaste',
           icon: TrendingUp,
           color: 'bg-purple-50 text-purple-600',
         },
         {
           href: '/dashboard/casos-disponibles',
           label: 'Casos disponibles',
-          desc: 'Encontra nuevos casos para proponer',
+          desc: 'Encontrá nuevos casos para proponer',
           icon: Search,
           color: 'bg-blue-50 text-blue-600',
         },
         {
           href: '/dashboard/mensajes',
           label: 'Mensajes',
-          desc: unreadMessages > 0 ? `Tenes ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
+          desc: unreadMessages > 0 ? `Tenés ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
           icon: MessageSquare,
           color: 'bg-orange-50 text-orange-600',
         },
@@ -122,14 +122,14 @@ export default async function DashboardHome() {
         {
           href: '/dashboard/mis-casos',
           label: 'Ver propuestas recibidas',
-          desc: newProposals > 0 ? `Tenes ${newProposals} propuestas de abogados` : 'Revisa las propuestas para tus casos',
+          desc: newProposals > 0 ? `Tenés ${newProposals} propuestas de abogados` : 'Revisá las propuestas para tus casos',
           icon: TrendingUp,
           color: 'bg-purple-50 text-purple-600',
         },
         {
           href: '/dashboard/mensajes',
           label: 'Mensajes',
-          desc: unreadMessages > 0 ? `Tenes ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
+          desc: unreadMessages > 0 ? `Tenés ${unreadMessages} mensajes sin leer` : 'Sin mensajes nuevos',
           icon: MessageSquare,
           color: 'bg-orange-50 text-orange-600',
         },
@@ -143,7 +143,7 @@ export default async function DashboardHome() {
         {
           href: '/abogados',
           label: 'Buscar abogados',
-          desc: 'Encontra el profesional ideal para tu caso',
+          desc: 'Encontrá el profesional ideal para tu caso',
           icon: FileText,
           color: 'bg-blue-50 text-blue-600',
         },
@@ -169,7 +169,7 @@ export default async function DashboardHome() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Mi panel</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          {isLawyer ? 'Segui el estado de tus propuestas y actividad' : 'Segui el estado de tus casos y propuestas'}
+          {isLawyer ? 'Seguí el estado de tus propuestas y actividad' : 'Seguí el estado de tus casos y propuestas'}
         </p>
       </div>
 
@@ -189,7 +189,7 @@ export default async function DashboardHome() {
                 <MessageSquare className="h-5 w-5 text-orange-600" />
               </div>
               <p className="text-2xl font-bold text-slate-900">{unreadMessages}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Mensajes no leidos</p>
+              <p className="text-xs text-slate-500 mt-0.5">Mensajes no leídos</p>
             </div>
           </>
         ) : (
@@ -213,7 +213,7 @@ export default async function DashboardHome() {
                 <MessageSquare className="h-5 w-5 text-orange-600" />
               </div>
               <p className="text-2xl font-bold text-slate-900">{unreadMessages}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Mensajes no leidos</p>
+              <p className="text-xs text-slate-500 mt-0.5">Mensajes no leídos</p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-5">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 mb-3">
@@ -232,7 +232,7 @@ export default async function DashboardHome() {
           <AlertCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-blue-900">
-              Tenes {newProposals} {newProposals === 1 ? 'propuesta' : 'propuestas'} de abogados
+              Tenés {newProposals} {newProposals === 1 ? 'propuesta' : 'propuestas'} de abogados
             </p>
             <p className="text-xs text-blue-700 mt-0.5">Revisalas y elige al profesional que mejor se adapte a tu caso.</p>
           </div>
@@ -292,7 +292,7 @@ export default async function DashboardHome() {
               </div>
             ) : (
               <div className="p-8 text-center text-sm text-slate-400">
-                Todavia no publicaste ningun caso.
+                Todavía no publicaste ningún caso.
               </div>
             )}
 
@@ -328,18 +328,18 @@ export default async function DashboardHome() {
         </div>
       </div>
 
-      {/* Upgrade CTA — solo para clientes */}
+      {/* CTA buscar abogado — solo para clientes */}
       {!isLawyer && (
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
           <div className="flex-1 text-white text-center sm:text-left">
-            <p className="font-bold text-base">Actualizate a Plan Profesional</p>
-            <p className="text-blue-100 text-sm mt-1">Publica casos ilimitados, chat prioritario y acceso a la IA de clasificacion.</p>
+            <p className="font-bold text-base">¿Necesitás un abogado?</p>
+            <p className="text-blue-100 text-sm mt-1">Publicá tu caso y recibí propuestas de abogados verificados en menos de 24 horas.</p>
           </div>
           <Link
-            href="/precios"
+            href="/casos/nuevo"
             className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors text-sm"
           >
-            Ver planes <ChevronRight className="h-4 w-4" />
+            Publicar caso <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
       )}

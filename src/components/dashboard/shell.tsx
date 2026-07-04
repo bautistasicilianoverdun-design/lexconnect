@@ -25,10 +25,10 @@ const LAWYER_NAV = [
   { href: '/dashboard/mis-propuestas', label: 'Mis propuestas', icon: Briefcase },
   { href: '/dashboard/mis-articulos', label: 'Mis articulos', icon: BookOpen },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: MessageSquare },
-  { href: '/dashboard/estadisticas', label: 'Estadisticas', icon: BarChart2 },
+  { href: '/dashboard/estadisticas', label: 'Estadísticas', icon: BarChart2 },
   { href: '/dashboard/valoraciones', label: 'Valoraciones', icon: Star },
-  { href: '/dashboard/suscripcion', label: 'Suscripcion', icon: CreditCard },
-  { href: '/dashboard/verificacion', label: 'Verificacion', icon: Shield },
+  { href: '/dashboard/suscripcion', label: 'Suscripción', icon: CreditCard },
+  { href: '/dashboard/verificacion', label: 'Verificación', icon: Shield },
   { href: '/dashboard/perfil', label: 'Mi perfil', icon: User },
 ]
 
@@ -130,7 +130,7 @@ export default function DashboardShell({
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all"
           >
             <Settings className="h-4 w-4 text-slate-400" />
-            Configuracion
+            Configuración
           </Link>
           <button
             onClick={handleLogout}
