@@ -137,7 +137,7 @@ export default function DashboardShell({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all"
           >
             <LogOut className="h-4 w-4 text-slate-400" />
-            Cerrar sesion
+            Cerrar sesión
           </button>
         </div>
       </aside>

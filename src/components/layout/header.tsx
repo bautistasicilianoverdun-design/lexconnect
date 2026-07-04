@@ -128,13 +128,13 @@ export function Header({ user: userProp }: HeaderProps) {
                       {user.role === 'client' && (
                         <UserMenuItem href="/dashboard/mis-casos">Mis Casos</UserMenuItem>
                       )}
-                      <UserMenuItem href="/dashboard/configuracion">Configuracion</UserMenuItem>
+                      <UserMenuItem href="/dashboard/configuracion">Configuración</UserMenuItem>
                       <div className="border-t border-border mt-1 pt-1">
                         <button
                           onClick={handleLogout}
                           className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
                         >
-                          Cerrar sesion
+                          Cerrar sesión
                         </button>
                       </div>
                     </div>
@@ -144,7 +144,7 @@ export function Header({ user: userProp }: HeaderProps) {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-                  <Link href="/iniciar-sesion">Iniciar sesion</Link>
+                  <Link href="/iniciar-sesion">Iniciar sesión</Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link href="/registro">Registrarse</Link>
@@ -179,7 +179,7 @@ export function Header({ user: userProp }: HeaderProps) {
           {!user && (
             <div className="flex gap-2 pt-2 border-t border-border">
               <Button variant="outline" className="flex-1" asChild>
-                <Link href="/iniciar-sesion">Iniciar sesion</Link>
+                <Link href="/iniciar-sesion">Iniciar sesión</Link>
               </Button>
               <Button className="flex-1" asChild>
                 <Link href="/registro">Registrarse</Link>

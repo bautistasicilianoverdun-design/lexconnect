@@ -25,11 +25,11 @@ export default async function SuscripcionExitoPage({
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Pago exitoso</h1>
         {planData && (
           <p className="text-slate-500 mb-1">
-            Suscripcion al plan <span className="font-semibold text-slate-900">{planData.label}</span> activada correctamente.
+            Suscripción al plan <span className="font-semibold text-slate-900">{planData.label}</span> activada correctamente.
           </p>
         )}
         <p className="text-sm text-slate-400 mb-8">
-          Tu cuenta fue actualizada. Ya podes disfrutar de todos los beneficios del plan.
+          Tu cuenta fue actualizada. Ya podés disfrutar de todos los beneficios del plan.
         </p>
 
         <Link

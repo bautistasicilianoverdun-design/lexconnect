@@ -155,7 +155,7 @@ export default async function OnboardingPage() {
                       <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-400 font-medium uppercase tracking-wide">Opcional</span>
                     )}
                     {step.pending && (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 font-medium">En revision</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 font-medium">En revisión</span>
                     )}
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">{step.description}</p>

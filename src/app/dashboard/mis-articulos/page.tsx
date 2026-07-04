@@ -73,7 +73,7 @@ export default async function MisArticulosPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <BookOpen className="h-12 w-12 mx-auto text-slate-200 mb-4" />
           <p className="font-semibold text-slate-700 mb-1">Todavia no escribiste articulos</p>
-          <p className="text-sm text-slate-400 mb-6">Compartí tu conocimiento legal y atraé mas clientes a tu perfil.</p>
+          <p className="text-sm text-slate-400 mb-6">Compartí tu conocimiento legal y atraé más clientes a tu perfil.</p>
           <Link
             href="/dashboard/mis-articulos/nuevo"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors"

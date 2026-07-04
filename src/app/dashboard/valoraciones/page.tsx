@@ -145,7 +145,7 @@ export default async function ValoracionesPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Valoraciones</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Las valoraciones se revelan cuando ambas partes califican, o automaticamente a los 7 dias.
+          Las valoraciones se revelan cuando ambas partes califican, o automáticamente a los 7 días.
         </p>
       </div>
 
@@ -177,7 +177,7 @@ export default async function ValoracionesPage() {
       {pendingCases.length === 0 && (myReviews ?? []).length === 0 && (
         <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
           <Star className="h-10 w-10 mx-auto text-slate-200 mb-3" />
-          <p className="text-sm text-slate-400">No tenes valoraciones pendientes.</p>
+          <p className="text-sm text-slate-400">No tenés valoraciones pendientes.</p>
           <p className="text-xs text-slate-300 mt-1">Las valoraciones aparecen cuando un caso es cerrado.</p>
         </div>
       )}
@@ -248,7 +248,7 @@ export default async function ValoracionesPage() {
                     {r.comment && <p className="text-sm text-slate-700 mt-2">{r.comment}</p>}
                     <div className="flex flex-wrap gap-3 mt-3">
                       {r.rating_communication ? (
-                        <div className="text-xs text-slate-400">Comunicacion <span className="font-semibold text-slate-700">{r.rating_communication}/5</span></div>
+                        <div className="text-xs text-slate-400">Comunicación <span className="font-semibold text-slate-700">{r.rating_communication}/5</span></div>
                       ) : null}
                       {r.rating_expertise ? (
                         <div className="text-xs text-slate-400">Conocimiento <span className="font-semibold text-slate-700">{r.rating_expertise}/5</span></div>

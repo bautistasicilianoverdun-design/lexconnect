@@ -16,7 +16,7 @@ export default function SuscripcionPendientePage() {
 
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Pago en proceso</h1>
         <p className="text-slate-500 mb-8">
-          Tu pago esta siendo procesado. Una vez confirmado, tu cuenta sera actualizada automaticamente. Recibirás una notificacion cuando este listo.
+          Tu pago está siendo procesado. Una vez confirmado, tu cuenta será actualizada automáticamente. Recibirás una notificación cuando esté listo.
         </p>
 
         <Link

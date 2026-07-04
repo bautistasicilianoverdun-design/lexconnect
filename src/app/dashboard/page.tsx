@@ -112,7 +112,7 @@ export default async function DashboardHome() {
         },
         {
           href: '/dashboard/estadisticas',
-          label: 'Estadisticas',
+          label: 'Estadísticas',
           desc: 'Tu rendimiento en la plataforma',
           icon: BarChart2,
           color: 'bg-green-50 text-green-600',

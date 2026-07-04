@@ -22,7 +22,7 @@ export const MP_PLANS = {
     features: [
       'Propuestas ilimitadas',
       'Perfil verificado destacado',
-      'Estadisticas avanzadas',
+      'Estadísticas avanzadas',
       'Soporte prioritario',
     ],
   },
@@ -30,10 +30,10 @@ export const MP_PLANS = {
     label: 'Premium',
     amount: 45000,
     currency: 'ARS',
-    description: 'Plan Premium LexConnect — maxima visibilidad',
+    description: 'Plan Premium LexConnect — máxima visibilidad',
     features: [
       'Todo lo del plan Profesional',
-      'Posicion destacada en busquedas',
+      'Posición destacada en búsquedas',
       'Badge Premium en el perfil',
       'Acceso anticipado a nuevas funciones',
     ],
@@ -42,12 +42,12 @@ export const MP_PLANS = {
     label: 'Estudio',
     amount: 70000,
     currency: 'ARS',
-    description: 'Plan Estudio LexConnect — para estudios juridicos',
+    description: 'Plan Estudio LexConnect — para estudios jurídicos',
     features: [
       'Hasta 5 abogados del estudio',
-      'Perfil de estudio juridico',
-      'Panel de administracion del estudio',
-      'Facturacion unificada',
+      'Perfil de estudio jurídico',
+      'Panel de administración del estudio',
+      'Facturación unificada',
     ],
   },
 } as const

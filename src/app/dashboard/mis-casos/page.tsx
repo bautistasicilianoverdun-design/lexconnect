@@ -238,7 +238,7 @@ export default async function MisCasosPage() {
 
               <div className="px-6 pb-5 pt-2 border-t border-slate-100 flex items-center justify-between">
                 <Link href={`/casos/${c.id}`} className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-                  Ver caso publico <ChevronRight className="h-3.5 w-3.5" />
+                  Ver caso público <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
                 {c.status === 'in_progress' && (
                   <form action={closeCaseAction.bind(null, c.id)}>

@@ -140,7 +140,7 @@ export function ReviewForm({
       {/* Rating general */}
       <div className="space-y-2">
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">
-          Calificacion general
+          Calificación general
         </label>
         <StarPicker value={rating} onChange={setRating} />
       </div>
@@ -149,7 +149,7 @@ export function ReviewForm({
       {isForLawyer && (
         <div className="space-y-2 p-4 bg-[#F9F9F8] rounded-lg">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Detalle</p>
-          <SubRating label="Comunicacion" value={comm} onChange={setComm} />
+          <SubRating label="Comunicación" value={comm} onChange={setComm} />
           <SubRating label="Conocimiento legal" value={exp} onChange={setExp} />
           <SubRating label="Relacion precio/calidad" value={val} onChange={setVal} />
           <SubRating label="Tiempo de respuesta" value={resp} onChange={setResp} />

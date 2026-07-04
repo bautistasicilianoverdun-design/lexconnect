@@ -210,7 +210,7 @@ export function AdminVerificationTable({ records: initial }: { records: Record_[
 
                       {r.verification_status === 'verified' && (
                         <button
-                          onClick={() => handleUpdate(r.id, 'rejected', 'Verificacion revocada por el equipo de LexConnect.')}
+                          onClick={() => handleUpdate(r.id, 'rejected', 'Verificación revocada por el equipo de LexConnect.')}
                           disabled={!!loading}
                           className="px-3 py-1.5 rounded-lg border border-[#EAEAEA] text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
                         >
@@ -220,7 +220,7 @@ export function AdminVerificationTable({ records: initial }: { records: Record_[
 
                       {r.verification_status === 'rejected' && (
                         <button
-                          onClick={() => handleUpdate(r.id, 'pending', 'Puesto en revision nuevamente por el admin.')}
+                          onClick={() => handleUpdate(r.id, 'pending', 'Puesto en revisión nuevamente por el admin.')}
                           disabled={!!loading}
                           className="px-3 py-1.5 rounded-lg border border-[#EAEAEA] text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
                         >

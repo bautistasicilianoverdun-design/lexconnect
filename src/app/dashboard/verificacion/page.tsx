@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { VerificationForm } from '@/components/dashboard/verification-form'
 
-export const metadata = { title: 'Verificacion de matricula — LexConnect' }
+export const metadata = { title: 'Verificación de matrícula — LexConnect' }
 
 export default async function VerificacionPage() {
   const supabase = await createClient()
@@ -31,9 +31,9 @@ export default async function VerificacionPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Verificacion de matricula</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Verificación de matrícula</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Verificamos tu matricula contra el directorio oficial del colegio de abogados correspondiente.
+          Verificamos tu matrícula contra el directorio oficial del colegio de abogados correspondiente.
         </p>
       </div>
 

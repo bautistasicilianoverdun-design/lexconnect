@@ -87,7 +87,7 @@ export default async function AdminPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Panel de administracion</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Panel de administración</h1>
         <p className="text-sm text-slate-500 mt-1">Vision general de la plataforma</p>
       </div>
 

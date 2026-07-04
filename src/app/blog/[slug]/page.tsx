@@ -150,7 +150,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             href="/blog"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl transition-colors"
           >
-            <BookOpen className="h-4 w-4" /> Ver mas articulos
+            <BookOpen className="h-4 w-4" /> Ver más artículos
           </Link>
         </div>
       </div>

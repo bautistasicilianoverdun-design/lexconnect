@@ -9,17 +9,17 @@ export const metadata = { title: 'Precios — LexConnect' }
 
 const FREE_FEATURES = [
   'Hasta 3 propuestas por mes',
-  'Perfil publico de abogado',
+  'Perfil público de abogado',
   'Mensajeria con clientes',
   'Acceso a casos disponibles',
-  'Verificacion de identidad',
+  'Verificación de identidad',
 ]
 
 const FAQ = [
-  { q: 'Puedo cancelar en cualquier momento?', a: 'Si. No hay contratos ni permanencia minima. Seguiras teniendo acceso hasta el fin del periodo pagado.' },
-  { q: 'Que medios de pago aceptan?', a: 'Aceptamos tarjetas de credito y debito (Visa, Mastercard, Amex) y todos los medios disponibles en MercadoPago.' },
-  { q: 'LexConnect cobra comision por los casos?', a: 'No. Cobramos unicamente la suscripcion mensual. Sin comisiones por honorarios ni por casos cerrados.' },
-  { q: 'Los precios incluyen IVA?', a: 'Los precios mostrados son finales. Profesionales pueden solicitar factura a soporte.' },
+  { q: '¿Puedo cancelar en cualquier momento?', a: 'Sí. No hay contratos ni permanencia mínima. Seguirás teniendo acceso hasta el fin del período pagado.' },
+  { q: '¿Qué medios de pago aceptan?', a: 'Aceptamos tarjetas de crédito y débito (Visa, Mastercard, Amex) y todos los medios disponibles en MercadoPago.' },
+  { q: '¿LexConnect cobra comisión por los casos?', a: 'No. Cobramos únicamente la suscripción mensual. Sin comisiones por honorarios ni por casos cerrados.' },
+  { q: '¿Los precios incluyen IVA?', a: 'Los precios mostrados son finales. Profesionales pueden solicitar factura a soporte.' },
 ]
 
 export default async function PricingPage() {
@@ -51,7 +51,7 @@ export default async function PricingPage() {
               El plan adecuado para cada abogado
             </h1>
             <p className="text-lg text-slate-500">
-              Empeza gratis. Escala cuando estes listo. Sin contratos ni permanencia minima.
+              Empezá gratis. Escalá cuando estés listo. Sin contratos ni permanencia mínima.
             </p>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default async function PricingPage() {
             {/* Free */}
             <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 flex flex-col">
               <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Basico</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Básico</p>
                 <p className="text-3xl font-bold text-slate-900">$0</p>
                 <p className="text-sm text-slate-400 mt-0.5">Para siempre</p>
               </div>
@@ -101,7 +101,7 @@ export default async function PricingPage() {
                   {isPopular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap">
-                        Mas popular
+                        Más popular
                       </span>
                     </div>
                   )}

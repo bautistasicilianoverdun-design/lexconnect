@@ -258,16 +258,16 @@ export function VerificationForm({
       const result = data.result
       if (result.status === 'verified') {
         setStatus('verified')
-        setNotes(`Verificado automaticamente. Nombre encontrado: ${result.found_name}`)
-        setFeedback({ type: 'success', msg: `Verificacion exitosa. Encontramos tu matricula a nombre de "${result.found_name}".` })
+        setNotes(`Verificado automáticamente. Nombre encontrado: ${result.found_name}`)
+        setFeedback({ type: 'success', msg: `Verificación exitosa. Encontramos tu matrícula a nombre de "${result.found_name}".` })
       } else if (result.status === 'not_found') {
         setStatus('rejected')
         setNotes(`No encontrado en directorio ${barAssociation.toUpperCase()} con Tomo ${tomo} Folio ${folio}.`)
         setFeedback({ type: 'error', msg: 'No encontramos esa matricula en el directorio oficial. Verifica los datos o contacta soporte.' })
       } else {
         setStatus('pending')
-        setNotes('Tu solicitud fue enviada. Un administrador la revisara en 24-48 horas.')
-        setFeedback({ type: 'info', msg: 'Solicitud enviada. La revisaremos manualmente en 24-48 horas habiles.' })
+        setNotes('Tu solicitud fue enviada. Un administrador la revisará en 24-48 horas.')
+        setFeedback({ type: 'info', msg: 'Solicitud enviada. La revisaremos manualmente en 24-48 horas hábiles.' })
       }
 
       router.refresh()
@@ -312,7 +312,7 @@ export function VerificationForm({
               <polyline points="12 6 12 12 16 14"/>
             </svg>
             <div>
-              <p className="text-sm font-semibold" style={{ color: '#956400' }}>Revision en curso</p>
+              <p className="text-sm font-semibold" style={{ color: '#956400' }}>Revisión en curso</p>
               <p className="text-xs mt-1" style={{ color: '#956400', opacity: 0.8 }}>
                 {notes ?? 'Estamos revisando tu solicitud. Te notificaremos por email.'}
               </p>
@@ -328,7 +328,7 @@ export function VerificationForm({
               <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
             <div>
-              <p className="text-sm font-semibold" style={{ color: '#9F2F2D' }}>Verificacion no aprobada</p>
+              <p className="text-sm font-semibold" style={{ color: '#9F2F2D' }}>Verificación no aprobada</p>
               {notes && <p className="text-xs mt-1" style={{ color: '#9F2F2D', opacity: 0.8 }}>{notes}</p>}
             </div>
           </div>
@@ -375,8 +375,8 @@ export function VerificationForm({
             {selectedBar && (
               <p className="text-xs text-slate-400">
                 {selectedBar.auto
-                  ? 'Verificacion automatica al instante contra directorio publico del colegio'
-                  : 'Verificacion manual — un admin revisara tus documentos en 24-48 h habiles'}
+                  ? 'Verificación automática al instante contra directorio público del colegio'
+                  : 'Verificación manual — un admin revisará tus documentos en 24-48 h hábiles'}
               </p>
             )}
           </div>
@@ -538,8 +538,8 @@ export function VerificationForm({
         <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Como funciona la verificacion</h3>
         <div className="space-y-2">
           {[
-            { bar: 'CPACF (Capital Federal)', desc: 'Verificacion automatica al instante contra el directorio publico del colegio.' },
-            { bar: 'Resto de colegios', desc: 'Revision manual por nuestro equipo en 24-48 horas habiles. Adjunta tu carnet y certificado de matricula vigente.' },
+            { bar: 'CPACF (Capital Federal)', desc: 'Verificación automática al instante contra el directorio público del colegio.' },
+            { bar: 'Resto de colegios', desc: 'Revisión manual por nuestro equipo en 24-48 horas hábiles. Adjunta tu carnet y certificado de matrícula vigente.' },
           ].map(item => (
             <div key={item.bar} className="flex gap-2.5 text-xs">
               <span className="shrink-0 font-medium text-slate-700 w-44">{item.bar}</span>
