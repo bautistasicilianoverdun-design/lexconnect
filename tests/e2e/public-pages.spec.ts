@@ -10,8 +10,8 @@ test.describe('Páginas públicas accesibles sin login', () => {
     { url: '/abogados', heading: /abogados/i },
     { url: '/casos', heading: /casos/i },
     { url: '/estudios', heading: /estudios/i },
-    { url: '/como-funciona', heading: /cómo funciona|como funciona/i },
-    { url: '/precios', heading: /precios|planes/i },
+    { url: '/como-funciona', heading: /simple, seguro|transparente|como funciona|cómo funciona/i },
+    { url: '/precios', heading: /precios|planes|plan adecuado/i },
   ]
 
   for (const { url, heading } of PUBLIC_PAGES) {

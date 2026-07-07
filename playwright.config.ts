@@ -37,7 +37,10 @@ export default defineConfig({
     // ── Tests con contexto de cliente ───────────────────────────
     {
       name: 'client',
-      testMatch: /e2e\/(client|access-control).*\.spec\.ts/,
+      testMatch: [
+        '**/e2e/client-flows.spec.ts',
+        '**/e2e/access-control-client.spec.ts',
+      ],
       dependencies: ['setup-client'],
       use: {
         ...devices['Desktop Chrome'],
@@ -48,7 +51,10 @@ export default defineConfig({
     // ── Tests con contexto de abogado ───────────────────────────
     {
       name: 'lawyer',
-      testMatch: /e2e\/(lawyer|access-control).*\.spec\.ts/,
+      testMatch: [
+        '**/e2e/lawyer-flows.spec.ts',
+        '**/e2e/access-control-lawyer.spec.ts',
+      ],
       dependencies: ['setup-lawyer'],
       use: {
         ...devices['Desktop Chrome'],

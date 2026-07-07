@@ -56,7 +56,6 @@ async function globalSetup() {
       id: clientId,
       full_name: 'Test Cliente E2E',
       role: 'client',
-      email: TEST_CLIENT_EMAIL,
     },
     { onConflict: 'id' }
   )
@@ -92,7 +91,6 @@ async function globalSetup() {
       id: lawyerId,
       full_name: 'Test Abogado E2E',
       role: 'lawyer',
-      email: TEST_LAWYER_EMAIL,
     },
     { onConflict: 'id' }
   )
@@ -105,7 +103,6 @@ async function globalSetup() {
     {
       user_id: lawyerId,
       slug: 'test-abogado-e2e',
-      specialties: ['civil'],
       verification_status: 'verified',
     },
     { onConflict: 'user_id' }
