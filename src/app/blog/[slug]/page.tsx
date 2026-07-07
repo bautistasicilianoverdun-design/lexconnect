@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { BookOpen, Clock, Eye, ChevronLeft, MapPin, CheckCircle2, Star } from 'lucide-react'
+import { Header } from '@/components/layout/header'
+import { Footer } from '@/components/layout/footer'
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -56,7 +58,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   })
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex flex-col min-h-screen">
+      <Header user={null} />
+      <main className="flex-1 bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Back */}
         <Link
@@ -154,6 +158,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </Link>
         </div>
       </div>
+      </main>
+      <Footer />
     </div>
   )
 }
