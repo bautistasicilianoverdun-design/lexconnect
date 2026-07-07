@@ -76,6 +76,6 @@ test.describe('[CLIENTE] Página mis-casos', () => {
     await page.waitForLoadState('networkidle')
 
     expect(page.url()).toContain('/dashboard/mis-casos')
-    await expect(page.getByRole('link', { name: /nuevo caso|publicar/i })).toBeVisible({ timeout: 8000 })
+    await expect(page.getByRole('link', { name: /nuevo caso|publicar/i }).first()).toBeVisible({ timeout: 8000 })
   })
 })
