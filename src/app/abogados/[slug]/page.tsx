@@ -1,6 +1,6 @@
 import {
   MapPin, Star, CheckCircle2, Clock, MessageSquare, Video,
-  Briefcase, GraduationCap, Globe, Shield, BookOpen, ChevronRight,
+  Briefcase, GraduationCap, Globe, Shield, BookOpen, ChevronRight, Linkedin, FileText, BarChart2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -34,6 +34,15 @@ function timeAgo(date: string) {
 
 const IS_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// ─── Bar association labels ──────────────────────────────────────────────────
+
+const BAR_ASSOCIATION_LABELS: Record<string, string> = {
+  cpacf: 'Colegio Público de Abogados de la Capital Federal (CPACF)',
+  casi:  'Colegio de Abogados de San Isidro',
+  cac:   'Colegio de Abogados de Córdoba',
+  other: 'Otro colegio provincial',
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function LawyerProfilePage({
@@ -62,6 +71,7 @@ export default async function LawyerProfilePage({
       cases_handled, consultations_answered,
       response_time_hours, accepts_new_clients,
       license_number, university, graduation_year, videocall_link,
+      bar_association,
       profiles!user_id(full_name, avatar_url, city, bio, website, linkedin_url,
         provinces(name)
       ),
@@ -245,7 +255,13 @@ export default async function LawyerProfilePage({
                       {profile?.website && (
                         <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
                           <Globe className="h-3.5 w-3.5" />
-                          {profile.website}
+                          Sitio web
+                        </a>
+                      )}
+                      {profile?.linkedin_url && (
+                        <a href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                          <Linkedin className="h-3.5 w-3.5" />
+                          LinkedIn
                         </a>
                       )}
                     </div>
@@ -270,6 +286,9 @@ export default async function LawyerProfilePage({
                   )}
                   {lp.response_time_hours != null && (
                     <Stat value={`~${lp.response_time_hours}h`} label="tiempo de respuesta" />
+                  )}
+                  {articles.length > 0 && (
+                    <Stat value={String(articles.length)} label="artículos publicados" />
                   )}
                 </div>
               </div>
@@ -534,7 +553,7 @@ export default async function LawyerProfilePage({
               )}
 
               {/* Info rápida */}
-              {(lp.university || yearsActive || languages.length > 0 || licProvince) && (
+              {(lp.university || yearsActive || languages.length > 0 || licProvince || (lp as any).bar_association || profile?.linkedin_url || articles.length > 0) && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
                   {lp.university && (
                     <QuickInfoItem icon={<GraduationCap className="h-4 w-4" />} label="Universidad" value={lp.university} />
@@ -542,11 +561,33 @@ export default async function LawyerProfilePage({
                   {yearsActive && (
                     <QuickInfoItem icon={<Briefcase className="h-4 w-4" />} label="Años en ejercicio" value={`${yearsActive} años`} />
                   )}
+                  {(lp as any).bar_association && (
+                    <QuickInfoItem icon={<Shield className="h-4 w-4" />} label="Colegio de abogados" value={BAR_ASSOCIATION_LABELS[(lp as any).bar_association] ?? (lp as any).bar_association} />
+                  )}
                   {languages.length > 0 && (
                     <QuickInfoItem icon={<Globe className="h-4 w-4" />} label="Idiomas" value={languages.join(', ')} />
                   )}
                   {licProvince && (
                     <QuickInfoItem icon={<MapPin className="h-4 w-4" />} label="Provincia de matrícula" value={licProvince} />
+                  )}
+                  {articles.length > 0 && (
+                    <QuickInfoItem icon={<FileText className="h-4 w-4" />} label="Artículos publicados" value={String(articles.length)} />
+                  )}
+                  {profile?.linkedin_url && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-slate-400 mt-0.5"><Linkedin className="h-4 w-4" /></span>
+                      <div>
+                        <div className="text-xs text-slate-400">LinkedIn</div>
+                        <a
+                          href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 font-medium hover:underline"
+                        >
+                          Ver perfil
+                        </a>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
