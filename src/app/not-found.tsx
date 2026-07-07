@@ -39,10 +39,8 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/"
-              className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-white rounded-md transition-colors"
+              className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-white rounded-md transition-colors hover:opacity-80"
               style={{ background: '#111111' }}
-              onMouseOver={e => (e.currentTarget.style.background = '#333333')}
-              onMouseOut={e => (e.currentTarget.style.background = '#111111')}
             >
               Ir al inicio
             </Link>

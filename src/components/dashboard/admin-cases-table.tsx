@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Search, Trash2 } from 'lucide-react'
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   open:        { label: 'Abierto',    bg: '#EDF3EC', text: '#346538' },
@@ -34,6 +34,8 @@ export function AdminCasesTable({ cases: initial }: { cases: CaseRow[] }) {
   const [cases, setCases] = useState(initial)
   const [loading, setLoading] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [query, setQuery] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const supabase = createClient()
 
   async function updateCaseStatus(id: string, status: string) {
@@ -43,7 +45,28 @@ export function AdminCasesTable({ cases: initial }: { cases: CaseRow[] }) {
     setLoading(null)
   }
 
-  const filtered = filter === 'all' ? cases : cases.filter(c => c.status === filter)
+  async function deleteCase(id: string) {
+    setLoading(id + 'delete')
+    const { error } = await supabase.from('legal_cases').delete().eq('id', id)
+    if (!error) setCases(prev => prev.filter(c => c.id !== id))
+    setLoading(null)
+    setConfirmDelete(null)
+  }
+
+  const filtered = (() => {
+    let list = filter === 'all' ? cases : cases.filter(c => c.status === filter)
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      list = list.filter(c => {
+        const clientData = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles
+        return (
+          c.title?.toLowerCase().includes(q) ||
+          clientData?.full_name?.toLowerCase().includes(q)
+        )
+      })
+    }
+    return list
+  })()
 
   if (cases.length === 0) {
     return (
@@ -74,6 +97,18 @@ export function AdminCasesTable({ cases: initial }: { cases: CaseRow[] }) {
             }
           </button>
         ))}
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-2 h-9 rounded-lg border border-slate-200 bg-white px-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+        <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <input
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar por título o cliente..."
+          className="flex-1 text-sm outline-none placeholder:text-slate-400"
+        />
       </div>
 
       <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
@@ -128,7 +163,7 @@ export function AdminCasesTable({ cases: initial }: { cases: CaseRow[] }) {
                       {new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-5 py-3">
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="flex gap-1.5 flex-wrap items-center">
                         {c.status !== 'archived' && (
                           <button
                             onClick={() => updateCaseStatus(c.id, 'archived')}
@@ -154,6 +189,32 @@ export function AdminCasesTable({ cases: initial }: { cases: CaseRow[] }) {
                             className="px-2 py-1 rounded-lg text-xs font-medium border border-[#EAEAEA] text-slate-500 hover:bg-slate-100 disabled:opacity-40 transition-colors"
                           >
                             {loading === c.id + 'closed' ? '...' : 'Cerrar'}
+                          </button>
+                        )}
+                        {confirmDelete === c.id ? (
+                          <div className="flex gap-1 items-center">
+                            <span className="text-xs text-red-600 font-medium">¿Eliminar?</span>
+                            <button
+                              onClick={() => deleteCase(c.id)}
+                              disabled={loading === c.id + 'delete'}
+                              className="px-2 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+                            >
+                              {loading === c.id + 'delete' ? '...' : 'Sí'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(null)}
+                              className="px-2 py-1 rounded-lg text-xs font-medium border border-[#EAEAEA] text-slate-500 hover:bg-slate-100 transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDelete(c.id)}
+                            className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Eliminar caso"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>

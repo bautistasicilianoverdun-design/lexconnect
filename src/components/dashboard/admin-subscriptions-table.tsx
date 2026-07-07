@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Search } from 'lucide-react'
 
 const PLAN_LABELS: Record<string, string> = {
   professional: 'Profesional',
@@ -31,6 +32,8 @@ export function AdminSubscriptionsTable({ subscriptions: initial }: { subscripti
   const [subs, setSubs] = useState(initial)
   const [loading, setLoading] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [query, setQuery] = useState('')
+  const [changingPlan, setChangingPlan] = useState<string | null>(null)
   const supabase = createClient()
 
   async function updateStatus(id: string, status: string) {
@@ -40,7 +43,25 @@ export function AdminSubscriptionsTable({ subscriptions: initial }: { subscripti
     setLoading(null)
   }
 
-  const filtered = filter === 'all' ? subs : subs.filter(s => s.status === filter)
+  async function changePlan(id: string, plan_type: string) {
+    setLoading(id + 'plan')
+    const { error } = await supabase.from('subscriptions').update({ plan_type }).eq('id', id)
+    if (!error) setSubs(prev => prev.map(s => s.id === id ? { ...s, plan_type } : s))
+    setLoading(null)
+    setChangingPlan(null)
+  }
+
+  const filtered = (() => {
+    let list = filter === 'all' ? subs : subs.filter(s => s.status === filter)
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      list = list.filter(s => {
+        const profileData = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
+        return profileData?.full_name?.toLowerCase().includes(q)
+      })
+    }
+    return list
+  })()
 
   if (subs.length === 0) {
     return (
@@ -89,6 +110,18 @@ export function AdminSubscriptionsTable({ subscriptions: initial }: { subscripti
         ))}
       </div>
 
+      {/* Search */}
+      <div className="flex items-center gap-2 h-9 rounded-lg border border-slate-200 bg-white px-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+        <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <input
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar por nombre del abogado..."
+          className="flex-1 text-sm outline-none placeholder:text-slate-400"
+        />
+      </div>
+
       <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -129,7 +162,7 @@ export function AdminSubscriptionsTable({ subscriptions: initial }: { subscripti
                       {new Date(s.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-5 py-3">
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 flex-wrap items-center">
                         {s.status === 'active' && (
                           <button
                             onClick={() => updateStatus(s.id, 'cancelled')}
@@ -155,6 +188,28 @@ export function AdminSubscriptionsTable({ subscriptions: initial }: { subscripti
                             className="px-2 py-1 rounded-lg text-xs font-medium border border-[#EAEAEA] text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors"
                           >
                             {loading === s.id + 'active' ? '...' : 'Aprobar'}
+                          </button>
+                        )}
+                        {changingPlan === s.id ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              defaultValue={s.plan_type}
+                              onChange={e => changePlan(s.id, e.target.value)}
+                              disabled={loading === s.id + 'plan'}
+                              className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            >
+                              {Object.entries(PLAN_LABELS).map(([v, l]) => (
+                                <option key={v} value={v}>{l}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => setChangingPlan(null)} className="text-xs text-slate-400 hover:text-slate-600">✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setChangingPlan(s.id)}
+                            className="px-2 py-1 rounded-lg text-xs font-medium border border-[#EAEAEA] text-slate-500 hover:bg-slate-50 transition-colors"
+                          >
+                            Plan
                           </button>
                         )}
                       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updateVerificationStatus } from '@/app/dashboard/admin/actions'
+import { createClient } from '@/lib/supabase/client'
 
 type Record_ = {
   id: string
@@ -280,7 +281,6 @@ export function AdminVerificationTable({ records: initial }: { records: Record_[
 
 function DocButton({ path, index }: { path: string; index: number }) {
   const [loading, setLoading] = useState(false)
-  const { createClient } = require('@/lib/supabase/client')
 
   async function open() {
     setLoading(true)
