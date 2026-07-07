@@ -1,6 +1,6 @@
 import {
   MapPin, Star, CheckCircle2, Clock, MessageSquare, Video,
-  Briefcase, GraduationCap, Globe, Shield, BookOpen, ChevronRight, Linkedin, FileText, BarChart2,
+  Briefcase, GraduationCap, Globe, Shield, BookOpen, ChevronRight, ExternalLink, FileText,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -260,7 +260,7 @@ export default async function LawyerProfilePage({
                       )}
                       {profile?.linkedin_url && (
                         <a href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
-                          <Linkedin className="h-3.5 w-3.5" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                           LinkedIn
                         </a>
                       )}
@@ -575,7 +575,7 @@ export default async function LawyerProfilePage({
                   )}
                   {profile?.linkedin_url && (
                     <div className="flex items-start gap-3">
-                      <span className="text-slate-400 mt-0.5"><Linkedin className="h-4 w-4" /></span>
+                      <span className="text-slate-400 mt-0.5"><ExternalLink className="h-4 w-4" /></span>
                       <div>
                         <div className="text-xs text-slate-400">LinkedIn</div>
                         <a
