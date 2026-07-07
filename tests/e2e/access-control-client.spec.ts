@@ -42,8 +42,8 @@ test.describe('[CLIENTE] Sidebar y navegación', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByText('Casos activos')).toBeVisible()
-    await expect(page.getByText('Propuestas recibidas')).toBeVisible()
-    await expect(page.getByText('Propuestas enviadas')).not.toBeVisible()
+    await expect(page.getByText('Propuestas recibidas', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Propuestas enviadas', { exact: true })).not.toBeVisible()
   })
 
   test('el dashboard home muestra el CTA de publicar caso', async ({ page }) => {

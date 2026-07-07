@@ -8,9 +8,9 @@ const LAWYER_SIDEBAR_ITEMS = [
   'Casos disponibles',
   'Mis propuestas',
   'Mensajes',
-  'Estadisticas',
-  'Suscripcion',
-  'Verificacion',
+  'Estadísticas',
+  'Suscripción',
+  'Verificación',
   'Mi perfil',
 ]
 
