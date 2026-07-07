@@ -7,6 +7,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env.test') })
 const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3001'
 
 export default defineConfig({
+  globalSetup: './tests/global-setup.ts',
+  globalTeardown: './tests/global-teardown.ts',
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
